@@ -18,11 +18,14 @@ class StartupService {
       PrefKeys.selectedLanguage,
     );
 
+    final authToken =
+    prefs.getString(
+      PrefKeys.authToken,
+    );
+
     final loggedIn =
-        prefs.getBool(
-          PrefKeys.isLoggedIn,
-        ) ??
-            false;
+        authToken != null &&
+            authToken.isNotEmpty;
 
     // ==========================================================
     // FIRST LAUNCH
@@ -41,15 +44,18 @@ class StartupService {
     }
 
     // ==========================================================
-    // USER LOGGED IN
+    // NO AUTH SESSION
     // ==========================================================
 
-    if (loggedIn) {
-      return RouteNames.home;
+    if (!loggedIn) {
+      return RouteNames.welcome;
     }
 
     // ==========================================================
-    // USER NOT LOGGED IN
+    // AUTH SESSION EXISTS
+    //
+    // The exact role will be handled by SplashScreen
+    // after validating the current user with /auth/me.
     // ==========================================================
 
     return RouteNames.welcome;

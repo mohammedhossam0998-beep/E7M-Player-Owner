@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionStatusBadge extends StatelessWidget {
   const CompetitionStatusBadge({
@@ -47,7 +48,7 @@ class CompetitionStatusBadge extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'open':
         return _StatusStyle(
-          label: 'Open',
+          label: 'Open'.tr,
           icon: Icons.check_circle_outline,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -56,7 +57,7 @@ class CompetitionStatusBadge extends StatelessWidget {
 
       case 'upcoming':
         return _StatusStyle(
-          label: 'Upcoming',
+          label: 'Upcoming'.tr,
           icon: Icons.schedule_outlined,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -65,7 +66,7 @@ class CompetitionStatusBadge extends StatelessWidget {
 
       case 'ongoing':
         return _StatusStyle(
-          label: 'Ongoing',
+          label: 'Ongoing'.tr,
           icon: Icons.play_circle_outline,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -74,7 +75,7 @@ class CompetitionStatusBadge extends StatelessWidget {
 
       case 'completed':
         return _StatusStyle(
-          label: 'Completed',
+          label: 'Completed'.tr,
           icon: Icons.emoji_events_outlined,
           backgroundColor:
           theme.colorScheme.surfaceContainerHighest,
@@ -85,7 +86,7 @@ class CompetitionStatusBadge extends StatelessWidget {
       case 'cancelled':
       case 'canceled':
         return _StatusStyle(
-          label: 'Cancelled',
+          label: 'Cancelled'.tr,
           icon: Icons.cancel_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -94,7 +95,7 @@ class CompetitionStatusBadge extends StatelessWidget {
 
       default:
         return _StatusStyle(
-          label: status.isEmpty ? 'Competition' : status,
+          label: status.isEmpty ? 'Competition'.tr : status,
           icon: Icons.info_outline,
           backgroundColor:
           theme.colorScheme.surfaceContainerHighest,

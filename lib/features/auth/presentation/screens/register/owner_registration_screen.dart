@@ -148,33 +148,6 @@ class _OwnerRegistrationScreenState
 
     // ==========================================================
     // REGISTRATION SUCCESS
-    //
-    // ✨ إصلاح: registrationId نوعه int? مش String?
-    // الشيك القديم (registrationId.isEmpty) كان بيعمل compile
-    // error لأن int مالوش isEmpty. الشيك الصح هو == null بس.
-    // ==========================================================
-
-    final registrationId =
-        authController.registrationId;
-
-    if (registrationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Registration succeeded but registration ID is missing.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-
-      return;
-    }
-
-    // ==========================================================
-    // GO TO OWNER OTP
-    //
-    // ✨ إصلاح: بنبعت كل البيانات (fullName, phone, city) عشان
-    // OwnerOtpScreen تقدر تمررها لـ SetPasswordScreen بعدين.
     // ==========================================================
 
     Navigator.push(
@@ -187,7 +160,6 @@ class _OwnerRegistrationScreenState
             email: email,
             phone: phone,
             city: city,
-            registrationId: registrationId,
           ),
         ),
       ),

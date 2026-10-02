@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/player_profile_repository.dart';
 import '../../models/player_profile_model.dart';
@@ -144,7 +143,7 @@ class PlayerProfileProvider extends ChangeNotifier {
   // ============================================================
 
   Future<bool> uploadProfileImage(
-      File image,
+      XFile image,
       ) async {
     _setUploadingImage(true);
     _clearError();

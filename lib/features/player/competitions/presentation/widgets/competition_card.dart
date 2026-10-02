@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:e7m/features/player/competitions/models/competition_model.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionCard extends StatelessWidget {
   const CompetitionCard({
@@ -102,10 +103,10 @@ class CompetitionCard extends StatelessWidget {
     final max = competition.maxParticipants;
 
     if (max == null) {
-      return '$current participants';
+      return '{count} participants'.trArgs({'count': current});
     }
 
-    return '$current / $max participants';
+    return '{current} / {max} participants'.trArgs({'current': current, 'max': max});
   }
 
   String _formatDateRange() {
@@ -113,7 +114,7 @@ class CompetitionCard extends StatelessWidget {
     final end = competition.endDate;
 
     if (start == null && end == null) {
-      return 'Date not available';
+      return 'Date not available'.tr;
     }
 
     String format(DateTime date) {
@@ -283,24 +284,24 @@ class _StatusBadge extends StatelessWidget {
   String _statusLabel(String value) {
     switch (value.toLowerCase()) {
       case 'open':
-        return 'Open';
+        return 'Open'.tr;
 
       case 'upcoming':
-        return 'Upcoming';
+        return 'Upcoming'.tr;
 
       case 'ongoing':
-        return 'Ongoing';
+        return 'Ongoing'.tr;
 
       case 'completed':
-        return 'Completed';
+        return 'Completed'.tr;
 
       case 'cancelled':
       case 'canceled':
-        return 'Cancelled';
+        return 'Cancelled'.tr;
 
       default:
         return value.isEmpty
-            ? 'Competition'
+            ? 'Competition'.tr
             : value;
     }
   }
@@ -370,8 +371,8 @@ class _EntryFee extends StatelessWidget {
       ),
       child: Text(
         amount <= 0
-            ? 'Free'
-            : '${amount.toStringAsFixed(0)} EGP',
+            ? 'Free'.tr
+            : '{amount} EGP'.trArgs({'amount': amount.toStringAsFixed(0)}),
         style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.w800,

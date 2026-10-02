@@ -12,8 +12,12 @@ class PaymentModel {
   final String? transactionReference;
   final DateTime? createdAt;
 
-  // Owner payment account data
+  // ============================================================
+  // OWNER PAYMENT ACCOUNT DATA
+  // ============================================================
+
   final String? paymentAccountMethod;
+  final String? paymentAccountWalletProvider;
   final String? paymentAccountName;
   final String? paymentAccountIdentifier;
 
@@ -29,6 +33,7 @@ class PaymentModel {
     this.transactionReference,
     this.createdAt,
     this.paymentAccountMethod,
+    this.paymentAccountWalletProvider,
     this.paymentAccountName,
     this.paymentAccountIdentifier,
   });
@@ -40,8 +45,11 @@ class PaymentModel {
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
       id: _toInt(json['id']) ?? 0,
+
       userId: _toInt(json['user_id']) ?? 0,
+
       bookingId: _toInt(json['booking_id']) ?? 0,
+
       amount: _toDouble(json['amount']) ?? 0.0,
 
       paymentMethod:
@@ -62,8 +70,15 @@ class PaymentModel {
       createdAt:
       _toDateTime(json['created_at']),
 
+      // ========================================================
+      // OWNER PAYMENT ACCOUNT
+      // ========================================================
+
       paymentAccountMethod:
       json['payment_account_method']?.toString(),
+
+      paymentAccountWalletProvider:
+      json['payment_account_wallet_provider']?.toString(),
 
       paymentAccountName:
       json['payment_account_name']?.toString(),
@@ -83,16 +98,35 @@ class PaymentModel {
       'user_id': userId,
       'booking_id': bookingId,
       'amount': amount,
+
       'payment_method': paymentMethod,
       'payment_type': paymentType,
       'status': status,
-      'owner_payment_account_id': ownerPaymentAccountId,
-      'transaction_reference': transactionReference,
-      'created_at': createdAt?.toIso8601String(),
 
-      'payment_account_method': paymentAccountMethod,
-      'payment_account_name': paymentAccountName,
-      'payment_account_identifier': paymentAccountIdentifier,
+      'owner_payment_account_id':
+      ownerPaymentAccountId,
+
+      'transaction_reference':
+      transactionReference,
+
+      'created_at':
+      createdAt?.toIso8601String(),
+
+      // ========================================================
+      // OWNER PAYMENT ACCOUNT
+      // ========================================================
+
+      'payment_account_method':
+      paymentAccountMethod,
+
+      'payment_account_wallet_provider':
+      paymentAccountWalletProvider,
+
+      'payment_account_name':
+      paymentAccountName,
+
+      'payment_account_identifier':
+      paymentAccountIdentifier,
     };
   }
 
@@ -147,6 +181,61 @@ class PaymentModel {
   }
 
   // ============================================================
+  // WALLET PROVIDER HELPERS
+  // ============================================================
+
+  bool get isVodafoneCash {
+    return paymentAccountWalletProvider?.toLowerCase() ==
+        'vodafone_cash';
+  }
+
+  bool get isOrangeCash {
+    return paymentAccountWalletProvider?.toLowerCase() ==
+        'orange_cash';
+  }
+
+  bool get isEtisalatCash {
+    return paymentAccountWalletProvider?.toLowerCase() ==
+        'etisalat_cash';
+  }
+
+  bool get isWePay {
+    return paymentAccountWalletProvider?.toLowerCase() ==
+        'we_pay';
+  }
+
+  // ============================================================
+  // DISPLAY NAME
+  // ============================================================
+
+  String get paymentAccountDisplayName {
+    if (paymentAccountMethod?.toLowerCase() == 'instapay') {
+      return 'InstaPay';
+    }
+
+    if (paymentAccountWalletProvider != null) {
+      switch (paymentAccountWalletProvider!.toLowerCase()) {
+        case 'vodafone_cash':
+          return 'Vodafone Cash';
+
+        case 'orange_cash':
+          return 'Orange Cash';
+
+        case 'etisalat_cash':
+          return 'Etisalat Cash';
+
+        case 'we_pay':
+          return 'WE Pay';
+
+        default:
+          return paymentAccountWalletProvider!;
+      }
+    }
+
+    return paymentAccountMethod ?? '';
+  }
+
+  // ============================================================
   // COPY WITH
   // ============================================================
 
@@ -161,29 +250,60 @@ class PaymentModel {
     int? ownerPaymentAccountId,
     String? transactionReference,
     DateTime? createdAt,
+
     String? paymentAccountMethod,
+    String? paymentAccountWalletProvider,
     String? paymentAccountName,
     String? paymentAccountIdentifier,
   }) {
     return PaymentModel(
       id: id ?? this.id,
+
       userId: userId ?? this.userId,
+
       bookingId: bookingId ?? this.bookingId,
+
       amount: amount ?? this.amount,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
-      paymentType: paymentType ?? this.paymentType,
-      status: status ?? this.status,
+
+      paymentMethod:
+      paymentMethod ?? this.paymentMethod,
+
+      paymentType:
+      paymentType ?? this.paymentType,
+
+      status:
+      status ?? this.status,
+
       ownerPaymentAccountId:
-      ownerPaymentAccountId ?? this.ownerPaymentAccountId,
+      ownerPaymentAccountId ??
+          this.ownerPaymentAccountId,
+
       transactionReference:
-      transactionReference ?? this.transactionReference,
-      createdAt: createdAt ?? this.createdAt,
+      transactionReference ??
+          this.transactionReference,
+
+      createdAt:
+      createdAt ?? this.createdAt,
+
+      // ========================================================
+      // OWNER PAYMENT ACCOUNT
+      // ========================================================
+
       paymentAccountMethod:
-      paymentAccountMethod ?? this.paymentAccountMethod,
+      paymentAccountMethod ??
+          this.paymentAccountMethod,
+
+      paymentAccountWalletProvider:
+      paymentAccountWalletProvider ??
+          this.paymentAccountWalletProvider,
+
       paymentAccountName:
-      paymentAccountName ?? this.paymentAccountName,
+      paymentAccountName ??
+          this.paymentAccountName,
+
       paymentAccountIdentifier:
-      paymentAccountIdentifier ?? this.paymentAccountIdentifier,
+      paymentAccountIdentifier ??
+          this.paymentAccountIdentifier,
     );
   }
 

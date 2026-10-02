@@ -5,6 +5,7 @@ import '../../models/competition_model.dart';
 import '../../providers/competition_provider.dart';
 import 'competition_details_screen.dart';
 import 'competition_payment_screen.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class MyCompetitionsScreen extends StatelessWidget {
   const MyCompetitionsScreen({super.key});
@@ -36,8 +37,8 @@ class _MyCompetitionsView extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         centerTitle: true,
-        title: const Text(
-          'My Competitions',
+        title: Text(
+          'My Competitions'.tr,
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 20,
@@ -68,7 +69,7 @@ class _MyCompetitionsView extends StatelessWidget {
     if (provider.hasError && provider.competitions.isEmpty) {
       return _ErrorState(
         message: provider.errorMessage ??
-            'Something went wrong. Please try again.',
+            'Something went wrong. Please try again.'.tr,
         onRetry: provider.loadMyCompetitions,
       );
     }
@@ -279,9 +280,14 @@ class _MyCompetitionCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.groups_outlined,
                   text:
-                  '${competition.currentParticipants}'
-                      '${competition.maxParticipants != null ? ' / ${competition.maxParticipants}' : ''}'
-                      ' participants',
+                  competition.maxParticipants != null
+                      ? '{current} / {max} participants'.trArgs({
+                    'current': competition.currentParticipants,
+                    'max': competition.maxParticipants,
+                  })
+                      : '{count} participants'.trArgs({
+                    'count': competition.currentParticipants,
+                  }),
                 ),
 
                 const SizedBox(height: 8),
@@ -289,8 +295,8 @@ class _MyCompetitionCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.payments_outlined,
                   text: competition.entryFee > 0
-                      ? '${competition.entryFee.toStringAsFixed(2)}'
-                      : 'Free',
+                      ? '{amount} EGP'.trArgs({'amount': competition.entryFee.toStringAsFixed(2)})
+                      : 'Free'.tr,
                 ),
 
                 if (paymentPending &&
@@ -313,8 +319,8 @@ class _MyCompetitionCard extends StatelessWidget {
                         Icons.payment_outlined,
                         size: 19,
                       ),
-                      label: const Text(
-                        'Complete Payment',
+                      label: Text(
+                        'Complete Payment'.tr,
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryGreen,
@@ -336,25 +342,25 @@ class _MyCompetitionCard extends StatelessWidget {
 
                 if (paid || approved) ...[
                   const SizedBox(height: 12),
-                  const _ParticipationMessage(
+                  _ParticipationMessage(
                     icon: Icons.check_circle_outline,
-                    text: 'You are registered in this competition.',
+                    text: 'You are registered in this competition.'.tr,
                   ),
                 ],
 
                 if (expired) ...[
                   const SizedBox(height: 12),
-                  const _ParticipationMessage(
+                  _ParticipationMessage(
                     icon: Icons.timer_off_outlined,
-                    text: 'This registration has expired.',
+                    text: 'This registration has expired.'.tr,
                   ),
                 ],
 
                 if (rejected) ...[
                   const SizedBox(height: 12),
-                  const _ParticipationMessage(
+                  _ParticipationMessage(
                     icon: Icons.cancel_outlined,
-                    text: 'This registration was rejected.',
+                    text: 'This registration was rejected.'.tr,
                   ),
                 ],
               ],
@@ -370,7 +376,7 @@ class _MyCompetitionCard extends StatelessWidget {
       DateTime? end,
       ) {
     if (start == null && end == null) {
-      return 'Date not available';
+      return 'Date not available'.tr;
     }
 
     String format(DateTime date) {
@@ -429,64 +435,64 @@ class _StatusBadge extends StatelessWidget {
   _StatusConfig _statusConfig(String status) {
     switch (status) {
       case 'payment_pending':
-        return const _StatusConfig(
-          label: 'PAYMENT PENDING',
+        return _StatusConfig(
+          label: 'PAYMENT PENDING'.tr,
           backgroundColor: Color(0xfffff4d6),
           textColor: Color(0xff9A6B00),
         );
 
       case 'paid':
-        return const _StatusConfig(
-          label: 'PAID',
+        return _StatusConfig(
+          label: 'PAID'.tr,
           backgroundColor: Color(0xffe5f7d2),
           textColor: Color(0xff3E7800),
         );
 
       case 'approved':
-        return const _StatusConfig(
-          label: 'APPROVED',
+        return _StatusConfig(
+          label: 'APPROVED'.tr,
           backgroundColor: Color(0xffe5f7d2),
           textColor: Color(0xff3E7800),
         );
 
       case 'registered':
-        return const _StatusConfig(
-          label: 'REGISTERED',
+        return _StatusConfig(
+          label: 'REGISTERED'.tr,
           backgroundColor: Color(0xffe5f7d2),
           textColor: Color(0xff3E7800),
         );
 
       case 'expired':
-        return const _StatusConfig(
-          label: 'EXPIRED',
+        return _StatusConfig(
+          label: 'EXPIRED'.tr,
           backgroundColor: Color(0xffeeeeee),
           textColor: Color(0xff666666),
         );
 
       case 'rejected':
-        return const _StatusConfig(
-          label: 'REJECTED',
+        return _StatusConfig(
+          label: 'REJECTED'.tr,
           backgroundColor: Color(0xffffe4e4),
           textColor: Color(0xffB42318),
         );
 
       case 'cancelled':
-        return const _StatusConfig(
-          label: 'CANCELLED',
+        return _StatusConfig(
+          label: 'CANCELLED'.tr,
           backgroundColor: Color(0xffffe4e4),
           textColor: Color(0xffB42318),
         );
 
       case 'waitlisted':
-        return const _StatusConfig(
-          label: 'WAITLISTED',
+        return _StatusConfig(
+          label: 'WAITLISTED'.tr,
           backgroundColor: Color(0xffe9e7ff),
           textColor: Color(0xff5146A5),
         );
 
       case 'pending':
-        return const _StatusConfig(
-          label: 'PENDING',
+        return _StatusConfig(
+          label: 'PENDING'.tr,
           backgroundColor: Color(0xfffff4d6),
           textColor: Color(0xff9A6B00),
         );
@@ -494,7 +500,7 @@ class _StatusBadge extends StatelessWidget {
       default:
         return _StatusConfig(
           label: status.isEmpty
-              ? 'UNKNOWN'
+              ? 'UNKNOWN'.tr
               : status.replaceAll('_', ' ').toUpperCase(),
           backgroundColor:
           const Color(0xffeeeeee),
@@ -556,7 +562,7 @@ class _PaymentDeadline extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Payment deadline: $formatted',
+              'Payment deadline: {deadline}'.trArgs({'deadline': formatted}),
               style: const TextStyle(
                 color: Color(0xff765400),
                 fontSize: 12,
@@ -687,8 +693,8 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          const Text(
-            'No Competitions Yet',
+          Text(
+            'No Competitions Yet'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 21,
@@ -697,8 +703,8 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'You are not registered in any competition yet.',
+          Text(
+            'You are not registered in any competition yet.'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -739,8 +745,8 @@ class _ErrorState extends StatelessWidget {
               color: Colors.redAccent,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Unable to load competitions',
+            Text(
+              'Unable to load competitions'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -773,8 +779,8 @@ class _ErrorState extends StatelessWidget {
                   BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Try Again',
+              child: Text(
+                'Try Again'.tr,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                 ),

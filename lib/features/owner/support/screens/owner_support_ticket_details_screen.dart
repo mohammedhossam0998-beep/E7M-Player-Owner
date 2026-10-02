@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/support_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class OwnerSupportTicketDetailsScreen
     extends StatefulWidget {
@@ -49,8 +50,8 @@ class _OwnerSupportTicketDetailsScreenState
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Ticket Details',
+        title: Text(
+          'Ticket Details'.tr,
           style: TextStyle(
             color: Color(0xff1E1446),
             fontWeight: FontWeight.bold,
@@ -79,9 +80,9 @@ class _OwnerSupportTicketDetailsScreenState
       )
           : provider.selectedTicket ==
           null
-          ? const Center(
+          ? Center(
         child: Text(
-          'Ticket not found',
+          'Ticket not found'.tr,
         ),
       )
           : _buildContent(
@@ -139,11 +140,11 @@ class _OwnerSupportTicketDetailsScreenState
                 Row(
                   children: [
                     _Badge(
-                      text: ticket.status,
+                      text: _humanize(ticket.status),
                     ),
                     const SizedBox(width: 8),
                     _Badge(
-                      text: ticket.priority,
+                      text: _humanize(ticket.priority),
                     ),
                   ],
                 ),
@@ -169,8 +170,8 @@ class _OwnerSupportTicketDetailsScreenState
           // REPLIES
           // ====================================================
 
-          const Text(
-            'Replies',
+          Text(
+            'Replies'.tr,
             style: TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.bold,
@@ -192,8 +193,8 @@ class _OwnerSupportTicketDetailsScreenState
                   18,
                 ),
               ),
-              child: const Text(
-                'No replies yet. Our support team will respond soon.',
+              child: Text(
+                'No replies yet. Our support team will respond soon.'.tr,
                 style: TextStyle(
                   color: Colors.grey,
                   height: 1.5,
@@ -220,7 +221,7 @@ class _OwnerSupportTicketDetailsScreenState
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       CircleAvatar(
                         radius: 18,
@@ -240,7 +241,7 @@ class _OwnerSupportTicketDetailsScreenState
                       ),
                       SizedBox(width: 10),
                       Text(
-                        'Support Team',
+                        'Support Team'.tr,
                         style: TextStyle(
                           fontWeight:
                           FontWeight.bold,
@@ -303,4 +304,18 @@ class _Badge extends StatelessWidget {
       ),
     );
   }
+}
+
+// Turns an API value like 'in_progress' into 'In Progress' and translates it.
+String _humanize(String value) {
+  if (value.isEmpty) return value;
+
+  return value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .map((w) => w.isEmpty
+      ? w
+      : w[0].toUpperCase() + w.substring(1).toLowerCase())
+      .join(' ')
+      .tr;
 }

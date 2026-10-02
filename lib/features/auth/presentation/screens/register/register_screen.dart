@@ -76,21 +76,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // ==========================================================
 
     if (success) {
-      final registrationId =
-          authController.registrationId;
-
-      if (registrationId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'حدث خطأ: لم يتم إنشاء رقم التسجيل',
-            ),
-          ),
-        );
-
-        return;
-      }
-
       Navigator.push(
         context,
         MaterialPageRoute(

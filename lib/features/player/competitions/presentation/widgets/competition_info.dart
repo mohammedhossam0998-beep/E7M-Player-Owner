@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/competition_model.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionInfo extends StatelessWidget {
   const CompetitionInfo({
@@ -19,7 +20,7 @@ class CompetitionInfo extends StatelessWidget {
       children: [
         _InfoRow(
           icon: Icons.calendar_today_outlined,
-          title: 'Start Date',
+          title: 'Start Date'.tr,
           value: _formatOptionalDateTime(competition.startDate),
         ),
 
@@ -27,7 +28,7 @@ class CompetitionInfo extends StatelessWidget {
 
         _InfoRow(
           icon: Icons.event_available_outlined,
-          title: 'End Date',
+          title: 'End Date'.tr,
           value: _formatOptionalDateTime(competition.endDate),
         ),
 
@@ -35,7 +36,7 @@ class CompetitionInfo extends StatelessWidget {
 
         _InfoRow(
           icon: Icons.people_outline,
-          title: 'Participants',
+          title: 'Participants'.tr,
           value: _participantsText(),
         ),
 
@@ -43,7 +44,7 @@ class CompetitionInfo extends StatelessWidget {
 
         _InfoRow(
           icon: Icons.payments_outlined,
-          title: 'Entry Fee',
+          title: 'Entry Fee'.tr,
           value: _entryFeeText(),
         ),
 
@@ -51,7 +52,7 @@ class CompetitionInfo extends StatelessWidget {
 
         _InfoRow(
           icon: Icons.verified_outlined,
-          title: 'Approval',
+          title: 'Approval'.tr,
           value: _approvalModeText(),
         ),
 
@@ -59,7 +60,7 @@ class CompetitionInfo extends StatelessWidget {
 
         _InfoRow(
           icon: Icons.visibility_outlined,
-          title: 'Visibility',
+          title: 'Visibility'.tr,
           value: _visibilityText(),
         ),
 
@@ -67,8 +68,8 @@ class CompetitionInfo extends StatelessWidget {
           const SizedBox(height: 12),
           _InfoRow(
             icon: Icons.hourglass_bottom_outlined,
-            title: 'Waiting List',
-            value: 'Enabled',
+            title: 'Waiting List'.tr,
+            value: 'Enabled'.tr,
           ),
         ],
 
@@ -77,7 +78,7 @@ class CompetitionInfo extends StatelessWidget {
           const SizedBox(height: 12),
           _InfoRow(
             icon: Icons.timer_outlined,
-            title: 'Payment Window',
+            title: 'Payment Window'.tr,
             value: _paymentWindowText(),
           ),
         ],
@@ -86,7 +87,7 @@ class CompetitionInfo extends StatelessWidget {
           const SizedBox(height: 12),
           _InfoRow(
             icon: Icons.currency_exchange_outlined,
-            title: 'Refund Policy',
+            title: 'Refund Policy'.tr,
             value: _refundPolicyText(),
           ),
         ],
@@ -95,7 +96,7 @@ class CompetitionInfo extends StatelessWidget {
             competition.description!.trim().isNotEmpty) ...[
           const SizedBox(height: 20),
           Text(
-            'Description',
+            'Description'.tr,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -117,27 +118,27 @@ class CompetitionInfo extends StatelessWidget {
     final max = competition.maxParticipants;
 
     if (max == null || max <= 0) {
-      return '$current participants';
+      return '{count} participants'.trArgs({'count': current});
     }
 
-    return '$current / $max participants';
+    return '{current} / {max} participants'.trArgs({'current': current, 'max': max});
   }
 
   String _entryFeeText() {
     if (competition.entryFee <= 0) {
-      return 'Free';
+      return 'Free'.tr;
     }
 
-    return '${_formatNumber(competition.entryFee)} EGP';
+    return '{amount} EGP'.trArgs({'amount': _formatNumber(competition.entryFee)});
   }
 
   String _approvalModeText() {
     switch (competition.approvalMode.toLowerCase().trim()) {
       case 'auto':
-        return 'Automatic';
+        return 'Automatic'.tr;
 
       case 'manual':
-        return 'Manual';
+        return 'Manual'.tr;
 
       default:
         return competition.approvalMode;
@@ -147,10 +148,10 @@ class CompetitionInfo extends StatelessWidget {
   String _visibilityText() {
     switch (competition.visibility.toLowerCase().trim()) {
       case 'public':
-        return 'Public';
+        return 'Public'.tr;
 
       case 'private':
-        return 'Private';
+        return 'Private'.tr;
 
       default:
         return competition.visibility;
@@ -161,7 +162,7 @@ class CompetitionInfo extends StatelessWidget {
     final minutes = competition.paymentWindowMinutes!;
 
     if (minutes < 60) {
-      return '$minutes minutes';
+      return '{n} minutes'.trArgs({'n': minutes});
     }
 
     final hours = minutes / 60;
@@ -170,25 +171,25 @@ class CompetitionInfo extends StatelessWidget {
       final hoursValue = hours.toInt();
 
       if (hoursValue == 1) {
-        return '1 hour';
+        return '1 hour'.tr;
       }
 
-      return '$hoursValue hours';
+      return '{n} hours'.trArgs({'n': hoursValue});
     }
 
-    return '$minutes minutes';
+    return '{n} minutes'.trArgs({'n': minutes});
   }
 
   String _refundPolicyText() {
     switch (competition.refundPolicy.toLowerCase().trim()) {
       case 'none':
-        return 'No refund';
+        return 'No refund'.tr;
 
       case 'full':
-        return 'Full refund';
+        return 'Full refund'.tr;
 
       case 'partial':
-        return 'Partial refund';
+        return 'Partial refund'.tr;
 
       default:
         return competition.refundPolicy;
@@ -205,7 +206,7 @@ class CompetitionInfo extends StatelessWidget {
 
   String _formatOptionalDateTime(DateTime? dateTime) {
     if (dateTime == null) {
-      return 'Date not available';
+      return 'Date not available'.tr;
     }
 
     return _formatDateTime(dateTime);
@@ -226,7 +227,7 @@ class CompetitionInfo extends StatelessWidget {
 
     final minute = local.minute.toString().padLeft(2, '0');
 
-    final period = local.hour >= 12 ? 'PM' : 'AM';
+    final period = local.hour >= 12 ? 'PM'.tr : 'AM'.tr;
 
     return '$day/$month/$year • $hour:$minute $period';
   }

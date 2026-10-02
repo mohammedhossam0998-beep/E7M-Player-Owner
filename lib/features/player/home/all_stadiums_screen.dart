@@ -470,7 +470,7 @@ class _StadiumImage extends StatelessWidget {
       return image;
     }
 
-    return 'http://192.168.1.2:5000$image';
+    return 'http://192.168.1.3:5000image';
   }
 
   Widget _placeholder() {

@@ -398,7 +398,7 @@ class _HeroImage extends StatelessWidget {
     final imageUrl = image!.startsWith('http://') ||
         image!.startsWith('https://')
         ? image!
-        : 'http://192.168.1.2:5000$image';
+        : 'http://192.168.1.3:5000$image';
 
     return Image.network(
       imageUrl,

@@ -15,7 +15,7 @@ class ProfileHeader extends StatelessWidget {
   static const Color darkNavy = Color(0xff1E1446);
 
   // Backend server URL
-  static const String _serverUrl = 'http://192.168.1.2:5000';
+  static const String _serverUrl ='http://192.168.1.3:5000';
 
   @override
   Widget build(BuildContext context) {

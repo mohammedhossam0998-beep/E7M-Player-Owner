@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/player_profile_model.dart';
 import 'player_profile_api.dart';
@@ -33,15 +33,11 @@ class PlayerProfileRepository {
   Future<PlayerProfileModel> createProfile(
       Map<String, dynamic> data,
       ) async {
-    final response = await _api.createProfile(data);
+    await _api.createProfile(data);
 
-    final profile = response['profile'];
-
-    if (profile is! Map<String, dynamic>) {
-      throw Exception('Invalid created player profile data');
-    }
-
-    return PlayerProfileModel.fromJson(profile);
+    // POST /player/profile returns only the football fields (no name,
+    // email, phone or image), so reload the full profile.
+    return getMyProfile();
   }
 
   // ============================================================
@@ -51,15 +47,12 @@ class PlayerProfileRepository {
   Future<PlayerProfileModel> updateProfile(
       Map<String, dynamic> data,
       ) async {
-    final response = await _api.updateProfile(data);
+    await _api.updateProfile(data);
 
-    final profile = response['profile'];
-
-    if (profile is! Map<String, dynamic>) {
-      throw Exception('Invalid updated player profile data');
-    }
-
-    return PlayerProfileModel.fromJson(profile);
+    // PUT /player/profile returns only the football fields (no name,
+    // email, phone or image). Reload the full profile so the shared
+    // provider never ends up with missing account data.
+    return getMyProfile();
   }
 
   // ============================================================
@@ -81,7 +74,7 @@ class PlayerProfileRepository {
   // ============================================================
 
   Future<PlayerProfileModel> uploadProfileImage(
-      File image,
+      XFile image,
       ) async {
     await _api.uploadProfileImage(image);
 

@@ -53,7 +53,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     await context.read<TeamProvider>().loadTeamMessages(widget.teamId);
 
     _socketService.connect(
-      baseUrl: 'http://192.168.1.2:5000',
+      baseUrl: 'http://192.168.1.3:5000',
       token: token,
       onConnected: () {
         _socketService.joinTeam(

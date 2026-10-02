@@ -1,57 +1,141 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'package:e7m/core/services/token_storage.dart';
 
+// ============================================================
+// API EXCEPTION
+//
+// toString() returns only the message, so existing code that does
+//   e.toString().replaceFirst('Exception: ', '')
+// keeps working and never shows a technical prefix to the user.
+// ============================================================
+
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  const ApiException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
   // ============================================================
   // BASE URL
+  //
+  // Priority:
+  //   1. --dart-define=API_BASE_URL=https://api.example.com
+  //   2. Release build  -> _prodBaseUrl (must be HTTPS)
+  //   3. Debug build    -> _devBaseUrl  (local LAN IP)
+  //
+  // Release example:
+  //   flutter build appbundle --release \
+  //     --dart-define=API_BASE_URL=https://api.your-domain.com
+  //
+  // Do NOT include /api here. _buildUrl adds it automatically.
   // ============================================================
 
-  static const String baseUrl =
-      'http://192.168.1.2:5000/api';
+  static const String _envBaseUrl =
+  String.fromEnvironment('API_BASE_URL');
+
+  // TODO: replace with your real production HTTPS domain.
+  static const String _prodBaseUrl = 'https://api.your-domain.com';
+
+  static const String _devBaseUrl = 'http://192.168.1.3:5000';
+
+  static const String baseUrl = _envBaseUrl != ''
+      ? _envBaseUrl
+      : (kReleaseMode ? _prodBaseUrl : _devBaseUrl);
+
+  // ============================================================
+  // API PREFIX
+  //
+  // Backend mounts all API routes under /api.
+  // _buildUrl adds it automatically, so both:
+  //   '/pitches'      -> /api/pitches
+  //   '/api/pitches'  -> /api/pitches
+  // work without producing /api/api/...
+  // ============================================================
+
+  static const String apiPrefix = '/api';
+
+  // Paths served by the backend OUTSIDE /api (static files, health).
+  static const List<String> _nonApiPrefixes = [
+    '/uploads',
+    '/health',
+  ];
+
+  // ============================================================
+  // TIMEOUTS
+  // ============================================================
+
+  static const Duration _requestTimeout = Duration(seconds: 30);
+  static const Duration _uploadTimeout = Duration(seconds: 90);
+
+  // ============================================================
+  // UNAUTHORIZED CALLBACK
+  //
+  // Optional. Set once in main.dart to send the user back to login
+  // after the token is cleared on a 401 response.
+  // ============================================================
+
+  static void Function()? onUnauthorized;
+
+  // ============================================================
+  // MEDIA URL HELPER
+  //
+  // Turns a stored image path (/uploads/x.jpg) into a full URL.
+  // Returns '' for null / empty / 'null'. Full http(s) URLs are
+  // returned unchanged.
+  // ============================================================
+
+  static String resolveMediaUrl(String? path) {
+    final value = path?.trim() ?? '';
+
+    if (value.isEmpty || value == 'null') {
+      return '';
+    }
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+
+    return value.startsWith('/') ? '$baseUrl$value' : '$baseUrl/$value';
+  }
+
+  // ============================================================
+  // DEBUG LOGGING (debug builds only)
+  //
+  // Never logs tokens, request bodies, or response bodies.
+  // ============================================================
+
+  static void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
 
   // ============================================================
   // HEADERS
   // ============================================================
 
   Future<Map<String, String>> _headers() async {
-    final token =
-    await TokenStorage.getToken();
+    final token = await TokenStorage.getToken();
 
-    if (token != null && token.isNotEmpty) {
-      final preview = token.length > 20
-          ? '${token.substring(0, 20)}...'
-          : 'TOKEN_EXISTS';
-
-      print(
-        '🔐 TOKEN FROM STORAGE: $preview',
-      );
-    } else {
-      print(
-        '❌ TOKEN FROM STORAGE: NULL / EMPTY',
-      );
-    }
-
-    final headers =
-    <String, String>{
+    final headers = <String, String>{
       'Accept': 'application/json',
     };
 
     if (token != null && token.isNotEmpty) {
-      headers['Authorization'] =
-      'Bearer $token';
-
-      print(
-        '✅ Authorization Header Added',
-      );
-    } else {
-      print(
-        '⚠️ Authorization Header NOT Added',
-      );
+      headers['Authorization'] = 'Bearer $token';
     }
 
     return headers;
@@ -62,299 +146,136 @@ class ApiClient {
   // ============================================================
 
   Uri _buildUrl(String endpoint) {
-    final cleanEndpoint =
-    endpoint.startsWith('/')
-        ? endpoint
-        : '/$endpoint';
+    var cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
 
-    return Uri.parse(
-      '$baseUrl$cleanEndpoint',
+    final alreadyHasApiPrefix = cleanEndpoint == apiPrefix ||
+        cleanEndpoint.startsWith('$apiPrefix/');
+
+    final isNonApiPath = _nonApiPrefixes.any(
+          (prefix) => cleanEndpoint.startsWith(prefix),
     );
+
+    if (!alreadyHasApiPrefix && !isNonApiPath) {
+      cleanEndpoint = '$apiPrefix$cleanEndpoint';
+    }
+
+    return Uri.parse('$baseUrl$cleanEndpoint');
   }
 
   // ============================================================
   // GET
   // ============================================================
 
-  Future<dynamic> get(
-      String endpoint,
-      ) async {
-    try {
-      final url =
-      _buildUrl(endpoint);
-
-      print('🌐 GET: $url');
-
-      final headers =
-      await _headers();
-
-      print(
-        '📤 GET HEADERS: '
-            '${_safeHeaders(headers)}',
-      );
-
-      final response =
-      await http.get(
-        url,
-        headers: headers,
-      );
-
-      print(
-        '📡 GET STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 GET BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ GET ERROR: $e',
-      );
-
-      rethrow;
-    }
+  Future<dynamic> get(String endpoint) {
+    return _request('GET', endpoint);
   }
 
   // ============================================================
   // POST
   // ============================================================
 
-  Future<dynamic> post(
-      String endpoint,
-      Map<String, dynamic> body,
-      ) async {
-    try {
-      final url =
-      _buildUrl(endpoint);
-
-      print(
-        '🌐 POST: $url',
-      );
-
-      print(
-        '📤 POST BODY: '
-            '${jsonEncode(body)}',
-      );
-
-      final headers =
-      await _headers();
-
-      print(
-        '📤 POST HEADERS: '
-            '${_safeHeaders(headers)}',
-      );
-
-      final response =
-      await http.post(
-        url,
-        headers: {
-          ...headers,
-          'Content-Type':
-          'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      print(
-        '📡 POST STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 POST BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ POST ERROR: $e',
-      );
-
-      rethrow;
-    }
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) {
+    return _request('POST', endpoint, body: body);
   }
 
   // ============================================================
   // PUT
   // ============================================================
 
-  Future<dynamic> put(
-      String endpoint,
-      Map<String, dynamic> body,
-      ) async {
-    try {
-      final url =
-      _buildUrl(endpoint);
-
-      print(
-        '🌐 PUT: $url',
-      );
-
-      print(
-        '📤 PUT BODY: '
-            '${jsonEncode(body)}',
-      );
-
-      final headers =
-      await _headers();
-
-      print(
-        '📤 PUT HEADERS: '
-            '${_safeHeaders(headers)}',
-      );
-
-      final response =
-      await http.put(
-        url,
-        headers: {
-          ...headers,
-          'Content-Type':
-          'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      print(
-        '📡 PUT STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 PUT BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ PUT ERROR: $e',
-      );
-
-      rethrow;
-    }
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) {
+    return _request('PUT', endpoint, body: body);
   }
 
   // ============================================================
   // PATCH
   // ============================================================
 
-  Future<dynamic> patch(
-      String endpoint,
-      Map<String, dynamic> body,
-      ) async {
-    try {
-      final url =
-      _buildUrl(endpoint);
-
-      print(
-        '🌐 PATCH: $url',
-      );
-
-      print(
-        '📤 PATCH BODY: '
-            '${jsonEncode(body)}',
-      );
-
-      final headers =
-      await _headers();
-
-      print(
-        '📤 PATCH HEADERS: '
-            '${_safeHeaders(headers)}',
-      );
-
-      final response =
-      await http.patch(
-        url,
-        headers: {
-          ...headers,
-          'Content-Type':
-          'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      print(
-        '📡 PATCH STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 PATCH BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ PATCH ERROR: $e',
-      );
-
-      rethrow;
-    }
+  Future<dynamic> patch(String endpoint, Map<String, dynamic> body) {
+    return _request('PATCH', endpoint, body: body);
   }
 
   // ============================================================
   // DELETE
   // ============================================================
 
-  Future<dynamic> delete(
-      String endpoint,
-      ) async {
+  Future<dynamic> delete(String endpoint) {
+    return _request('DELETE', endpoint);
+  }
+
+  // ============================================================
+  // SHARED REQUEST (GET / POST / PUT / PATCH / DELETE)
+  // ============================================================
+
+  Future<dynamic> _request(
+      String method,
+      String endpoint, {
+        Map<String, dynamic>? body,
+      }) async {
+    final url = _buildUrl(endpoint);
+
+    _log('🌐 $method: $url');
+
     try {
-      final url =
-      _buildUrl(endpoint);
+      final headers = await _headers();
 
-      print(
-        '🌐 DELETE: $url',
+      if (body != null) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      final encodedBody = body != null ? jsonEncode(body) : null;
+
+      final http.Response response;
+
+      switch (method) {
+        case 'GET':
+          response = await http
+              .get(url, headers: headers)
+              .timeout(_requestTimeout);
+          break;
+
+        case 'POST':
+          response = await http
+              .post(url, headers: headers, body: encodedBody)
+              .timeout(_requestTimeout);
+          break;
+
+        case 'PUT':
+          response = await http
+              .put(url, headers: headers, body: encodedBody)
+              .timeout(_requestTimeout);
+          break;
+
+        case 'PATCH':
+          response = await http
+              .patch(url, headers: headers, body: encodedBody)
+              .timeout(_requestTimeout);
+          break;
+
+        case 'DELETE':
+          response = await http
+              .delete(url, headers: headers)
+              .timeout(_requestTimeout);
+          break;
+
+        default:
+          throw ApiException('Unsupported HTTP method: $method');
+      }
+
+      _log('📡 $method STATUS: ${response.statusCode}');
+
+      return await _handleResponse(response);
+    } on SocketException {
+      throw const ApiException(
+        'No internet connection. Please check your network and try again.',
       );
-
-      final headers =
-      await _headers();
-
-      print(
-        '📤 DELETE HEADERS: '
-            '${_safeHeaders(headers)}',
+    } on TimeoutException {
+      throw const ApiException(
+        'The request took too long. Please try again.',
       );
-
-      final response =
-      await http.delete(
-        url,
-        headers: headers,
+    } on http.ClientException {
+      throw const ApiException(
+        'Could not reach the server. Please try again.',
       );
-
-      print(
-        '📡 DELETE STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 DELETE BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ DELETE ERROR: $e',
-      );
-
-      rethrow;
     }
   }
 
@@ -367,161 +288,17 @@ class ApiClient {
       List<File> files, {
         String fieldName = 'images',
       }) async {
-    try {
-      if (files.isEmpty) {
-        throw Exception(
-          'No files selected for upload',
-        );
-      }
-
-      final url =
-      _buildUrl(endpoint);
-
-      print(
-        '🌐 MULTIPART POST: $url',
-      );
-
-      print(
-        '📁 FILE COUNT: '
-            '${files.length}',
-      );
-
-      print(
-        '📁 FIELD NAME: '
-            '$fieldName',
-      );
-
-      // ========================================================
-      // GET TOKEN
-      // ========================================================
-
-      final token =
-      await TokenStorage.getToken();
-
-      if (token == null ||
-          token.isEmpty) {
-        print(
-          '❌ UPLOAD TOKEN: '
-              'NULL / EMPTY',
-        );
-
-        throw Exception(
-          'Authentication token not found',
-        );
-      }
-
-      print(
-        '🔐 UPLOAD TOKEN: '
-            '${token.length > 20 ? '${token.substring(0, 20)}...' : 'TOKEN_EXISTS'}',
-      );
-
-      // ========================================================
-      // CREATE MULTIPART REQUEST
-      // ========================================================
-
-      final request =
-      http.MultipartRequest(
-        'POST',
-        url,
-      );
-
-      // ========================================================
-      // HEADERS
-      // ========================================================
-
-      request.headers['Accept'] =
-      'application/json';
-
-      request.headers['Authorization'] =
-      'Bearer $token';
-
-      print(
-        '📤 MULTIPART HEADERS: '
-            '${_safeHeaders(request.headers)}',
-      );
-
-      // ========================================================
-      // ADD FILES
-      // ========================================================
-
-      for (final file in files) {
-        if (!await file.exists()) {
-          throw Exception(
-            'File does not exist: '
-                '${file.path}',
-          );
-        }
-
-        print(
-          '📎 ADDING FILE: '
-              '${file.path}',
-        );
-
-        // ------------------------------------------------------
-        // FORCE JPEG MIME TYPE
-        // ------------------------------------------------------
-
-        final multipartFile =
-        await http.MultipartFile.fromPath(
-          fieldName,
-          file.path,
-          contentType:
-          MediaType(
-            'image',
-            'jpeg',
-          ),
-        );
-
-        print(
-          '🖼️ FILE MIME TYPE: '
-              '${multipartFile.contentType}',
-        );
-
-        request.files.add(
-          multipartFile,
-        );
-      }
-
-      print(
-        '📤 SENDING MULTIPART REQUEST...',
-      );
-
-      // ========================================================
-      // SEND
-      // ========================================================
-
-      final streamedResponse =
-      await request.send();
-
-      final response =
-      await http.Response.fromStream(
-        streamedResponse,
-      );
-
-      // ========================================================
-      // RESPONSE
-      // ========================================================
-
-      print(
-        '📡 UPLOAD STATUS: '
-            '${response.statusCode}',
-      );
-
-      print(
-        '📦 UPLOAD BODY: '
-            '${response.body}',
-      );
-
-      return _handleResponse(
-        response,
-      );
-    } catch (e) {
-      print(
-        '❌ UPLOAD FILES ERROR: $e',
-      );
-
-      rethrow;
+    if (files.isEmpty) {
+      throw const ApiException('No files selected for upload');
     }
+
+    return _sendMultipart(
+      endpoint: endpoint,
+      fields: const {},
+      files: files,
+      fieldName: fieldName,
+      fallbackToJpeg: true,
+    );
   }
 
   // ============================================================
@@ -534,175 +311,184 @@ class ApiClient {
     required List<File> files,
     String fieldName = 'images',
   }) async {
-    try {
-      if (files.isEmpty) {
-        throw Exception('No files selected for upload');
+    if (files.isEmpty) {
+      throw const ApiException('No files selected for upload');
+    }
+
+    return _sendMultipart(
+      endpoint: endpoint,
+      fields: fields,
+      files: files,
+      fieldName: fieldName,
+      fallbackToJpeg: false,
+    );
+  }
+
+  // ============================================================
+  // UPLOAD BYTES (works on Android, iOS AND Flutter Web)
+  //
+  // Use this with XFile.readAsBytes() instead of dart:io File,
+  // which is not supported on web ("Unsupported operation: _Namespace").
+  // ============================================================
+
+  Future<dynamic> uploadBytes(
+      String endpoint, {
+        required Uint8List bytes,
+        required String filename,
+        String fieldName = 'image',
+        Map<String, String> fields = const {},
+      }) async {
+    if (bytes.isEmpty) {
+      throw const ApiException('Selected file is empty');
+    }
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      fieldName,
+      bytes,
+      filename: filename,
+      contentType: _mediaTypeFor(filename) ?? MediaType('image', 'jpeg'),
+    );
+
+    return _sendMultipartFiles(
+      endpoint: endpoint,
+      fields: fields,
+      files: [multipartFile],
+    );
+  }
+
+  // ============================================================
+  // BUILD MULTIPART FILES FROM dart:io FILES (mobile only)
+  // ============================================================
+
+  Future<dynamic> _sendMultipart({
+    required String endpoint,
+    required Map<String, String> fields,
+    required List<File> files,
+    required String fieldName,
+    required bool fallbackToJpeg,
+  }) async {
+    final multipartFiles = <http.MultipartFile>[];
+
+    for (final file in files) {
+      if (!await file.exists()) {
+        throw const ApiException('Selected file could not be found');
       }
 
-      final url = _buildUrl(endpoint);
+      var contentType = _mediaTypeFor(file.path);
 
-      print('🌐 MULTIPART POST: $url');
-      print('📤 MULTIPART FIELDS: $fields');
-      print('📁 MULTIPART FILE COUNT: ${files.length}');
-      print('📁 MULTIPART FIELD NAME: $fieldName');
-
-      final token = await TokenStorage.getToken();
-
-      if (token == null || token.isEmpty) {
-        throw Exception('Authentication token not found');
+      if (contentType == null && fallbackToJpeg) {
+        contentType = MediaType('image', 'jpeg');
       }
 
-      final request = http.MultipartRequest(
-        'POST',
-        url,
-      );
-
-      request.headers['Accept'] = 'application/json';
-      request.headers['Authorization'] = 'Bearer $token';
-
-      // ----------------------------------------------------------
-      // FORM FIELDS
-      // ----------------------------------------------------------
-
-      request.fields.addAll(fields);
-
-      // ----------------------------------------------------------
-      // FILES
-      // ----------------------------------------------------------
-
-      for (final file in files) {
-        if (!await file.exists()) {
-          throw Exception(
-            'File does not exist: ${file.path}',
-          );
-        }
-
-        final extension = file.path.split('.').last.toLowerCase();
-
-        MediaType? contentType;
-
-        switch (extension) {
-          case 'jpg':
-          case 'jpeg':
-            contentType = MediaType('image', 'jpeg');
-            break;
-
-          case 'png':
-            contentType = MediaType('image', 'png');
-            break;
-
-          case 'webp':
-            contentType = MediaType('image', 'webp');
-            break;
-
-          case 'pdf':
-            contentType = MediaType('application', 'pdf');
-            break;
-        }
-
-        final multipartFile =
+      multipartFiles.add(
         await http.MultipartFile.fromPath(
           fieldName,
           file.path,
           contentType: contentType,
-        );
+        ),
+      );
+    }
 
-        request.files.add(multipartFile);
+    return _sendMultipartFiles(
+      endpoint: endpoint,
+      fields: fields,
+      files: multipartFiles,
+    );
+  }
+
+  // ============================================================
+  // SHARED MULTIPART SENDER
+  // ============================================================
+
+  Future<dynamic> _sendMultipartFiles({
+    required String endpoint,
+    required Map<String, String> fields,
+    required List<http.MultipartFile> files,
+  }) async {
+    final url = _buildUrl(endpoint);
+
+    _log('🌐 MULTIPART POST: $url (${files.length} file(s))');
+
+    try {
+      final token = await TokenStorage.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw const ApiException('Authentication token not found');
       }
 
-      print('📤 SENDING MULTIPART REQUEST...');
+      final request = http.MultipartRequest('POST', url);
 
-      final streamedResponse = await request.send();
+      request.headers['Accept'] = 'application/json';
+      request.headers['Authorization'] = 'Bearer $token';
 
-      final response = await http.Response.fromStream(
-        streamedResponse,
+      request.fields.addAll(fields);
+      request.files.addAll(files);
+
+      final streamedResponse = await request.send().timeout(_uploadTimeout);
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      _log('📡 MULTIPART STATUS: ${response.statusCode}');
+
+      return await _handleResponse(response);
+    } on SocketException {
+      throw const ApiException(
+        'No internet connection. Please check your network and try again.',
       );
-
-      print(
-        '📡 MULTIPART STATUS: ${response.statusCode}',
+    } on TimeoutException {
+      throw const ApiException(
+        'The upload took too long. Please try again.',
       );
-
-      print(
-        '📦 MULTIPART BODY: ${response.body}',
+    } on http.ClientException {
+      throw const ApiException(
+        'Could not reach the server. Please try again.',
       );
-
-      return _handleResponse(response);
-    } catch (e) {
-      print('❌ MULTIPART ERROR: $e');
-      rethrow;
     }
   }
 
   // ============================================================
-  // SAFE HEADERS FOR DEBUG
+  // MIME TYPE BY EXTENSION
   // ============================================================
 
-  Map<String, String> _safeHeaders(
-      Map<String, String> headers,
-      ) {
-    final safeHeaders =
-    Map<String, String>.from(
-      headers,
-    );
+  MediaType? _mediaTypeFor(String path) {
+    final dotIndex = path.lastIndexOf('.');
 
-    final authorization =
-    safeHeaders['Authorization'];
-
-    if (authorization != null &&
-        authorization.startsWith(
-          'Bearer ',
-        )) {
-      final token =
-      authorization.substring(7);
-
-      if (token.length > 20) {
-        safeHeaders['Authorization'] =
-        'Bearer '
-            '${token.substring(0, 20)}...';
-      } else {
-        safeHeaders['Authorization'] =
-        'Bearer ***';
-      }
+    if (dotIndex == -1 || dotIndex == path.length - 1) {
+      return null;
     }
 
-    return safeHeaders;
+    switch (path.substring(dotIndex + 1).toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+
+      case 'png':
+        return MediaType('image', 'png');
+
+      case 'webp':
+        return MediaType('image', 'webp');
+
+      case 'pdf':
+        return MediaType('application', 'pdf');
+
+      default:
+        return null;
+    }
   }
 
   // ============================================================
   // RESPONSE HANDLER
   // ============================================================
 
-  dynamic _handleResponse(
-      http.Response response,
-      ) {
-    print(
-      '🔎 Handling response...',
-    );
-
-    print(
-      '➡️ Status Code: '
-          '${response.statusCode}',
-    );
-
-    print(
-      '➡️ Response Body: '
-          '${response.body}',
-    );
-
+  Future<dynamic> _handleResponse(http.Response response) async {
     dynamic data;
 
     try {
-      data = response.body.isNotEmpty
-          ? jsonDecode(response.body)
-          : {};
-    } catch (e) {
-      print(
-        '❌ JSON DECODE ERROR: $e',
-      );
-
-      throw Exception(
-        'Invalid server response: '
-            '${response.statusCode}',
+      data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    } catch (_) {
+      throw ApiException(
+        'Unexpected server response. Please try again later.',
+        statusCode: response.statusCode,
       );
     }
 
@@ -710,12 +496,7 @@ class ApiClient {
     // SUCCESS
     // ==========================================================
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
-      print(
-        '✅ API REQUEST SUCCESS',
-      );
-
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
     }
 
@@ -725,36 +506,31 @@ class ApiClient {
 
     if (response.statusCode == 403 &&
         data is Map &&
-        data['requiresVerification'] ==
-            true) {
-      print(
-        '⚠️ EMAIL VERIFICATION REQUIRED',
-      );
-
+        data['requiresVerification'] == true) {
       return data;
+    }
+
+    // ==========================================================
+    // UNAUTHORIZED / EXPIRED TOKEN
+    // ==========================================================
+
+    if (response.statusCode == 401) {
+      await TokenStorage.clearToken();
+
+      onUnauthorized?.call();
     }
 
     // ==========================================================
     // ERROR MESSAGE
     // ==========================================================
 
-    final message =
-    data is Map
-        ? data['message']?.toString()
-        : null;
+    final message = data is Map ? data['message']?.toString() : null;
 
-    print(
-      '❌ API REQUEST FAILED',
-    );
-
-    print(
-      '❌ Server Message: $message',
-    );
-
-    throw Exception(
-      message ??
-          'Request failed: '
-              '${response.statusCode}',
+    throw ApiException(
+      (message != null && message.trim().isNotEmpty)
+          ? message
+          : 'Request failed (${response.statusCode})',
+      statusCode: response.statusCode,
     );
   }
 }

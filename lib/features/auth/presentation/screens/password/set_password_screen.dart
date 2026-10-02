@@ -86,8 +86,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     // ============================================================
     // CHECK OTP / REGISTRATION
     // ============================================================
-    final registrationId = auth.registrationId;
-    if (registrationId == null) {
+    final registrationToken = auth.registrationToken;
+
+    if (registrationToken == null || registrationToken.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -119,7 +120,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     });
 
     final success = await auth.setPassword(
-      registrationId: registrationId,
+      registrationToken: registrationToken,
       password: password,
       confirmPassword: confirmPassword,
     );

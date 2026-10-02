@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/competition_model.dart';
 import '../../models/competition_payment_model.dart';
 import '../../providers/competition_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionPaymentStatusScreen extends StatelessWidget {
   const CompetitionPaymentStatusScreen({
@@ -65,8 +66,8 @@ class _PaymentStatusView extends StatelessWidget {
             color: e7mNavy,
           ),
         ),
-        title: const Text(
-          'Payment Status',
+        title: Text(
+          'Payment Status'.tr,
           style: TextStyle(
             color: e7mNavy,
             fontSize: 19,
@@ -288,8 +289,8 @@ class _CompetitionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Competition',
+                Text(
+                  'Competition'.tr,
                   style: TextStyle(
                     color: Color(0xFF7A8594),
                     fontSize: 11,
@@ -336,17 +337,17 @@ class _PaymentDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _CardTitle(
+          _CardTitle(
             icon: Icons.receipt_long_outlined,
-            title: 'Payment Details',
+            title: 'Payment Details'.tr,
           ),
 
           const SizedBox(height: 16),
 
           _DetailRow(
             icon: Icons.payments_outlined,
-            title: 'Amount',
-            value: '${_formatMoney(payment.amount)} EGP',
+            title: 'Amount'.tr,
+            value: '{amount} EGP'.trArgs({'amount': _formatMoney(payment.amount)}),
             valueColor: e7mGreen,
           ),
 
@@ -354,7 +355,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
           _DetailRow(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Payment Method',
+            title: 'Payment Method'.tr,
             value: _paymentMethodLabel(
               payment.paymentMethod,
             ),
@@ -366,7 +367,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.tag_rounded,
-              title: 'Transaction Reference',
+              title: 'Transaction Reference'.tr,
               value: payment.transactionReference!,
             ),
           ],
@@ -376,7 +377,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.account_balance_outlined,
-              title: 'Payment Account',
+              title: 'Payment Account'.tr,
               value: '#${payment.ownerPaymentAccountId}',
             ),
           ],
@@ -386,7 +387,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.upload_rounded,
-              title: 'Submitted',
+              title: 'Submitted'.tr,
               value: _formatDateTime(
                 payment.submittedAt!,
               ),
@@ -398,7 +399,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.verified_outlined,
-              title: 'Verified',
+              title: 'Verified'.tr,
               value: _formatDateTime(
                 payment.verifiedAt!,
               ),
@@ -410,7 +411,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.check_circle_outline_rounded,
-              title: 'Paid',
+              title: 'Paid'.tr,
               value: _formatDateTime(
                 payment.paidAt!,
               ),
@@ -422,7 +423,7 @@ class _PaymentDetailsCard extends StatelessWidget {
 
             _DetailRow(
               icon: Icons.cancel_outlined,
-              title: 'Rejected',
+              title: 'Rejected'.tr,
               value: _formatDateTime(
                 payment.rejectedAt!,
               ),
@@ -481,8 +482,8 @@ class _RejectionCard extends StatelessWidget {
               crossAxisAlignment:
               CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Rejection Reason',
+                Text(
+                  'Rejection Reason'.tr,
                   style: TextStyle(
                     color: Colors.redAccent,
                     fontSize: 13,
@@ -521,9 +522,9 @@ class _ReviewNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return _NoticeCard(
       icon: Icons.hourglass_top_rounded,
-      title: 'Under Review',
+      title: 'Under Review'.tr,
       message:
-      'Your payment proof has been submitted and is waiting for the competition owner to review it.',
+      'Your payment proof has been submitted and is waiting for the competition owner to review it.'.tr,
       color: e7mGreen,
     );
   }
@@ -542,9 +543,9 @@ class _SuccessNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return _NoticeCard(
       icon: Icons.check_circle_outline_rounded,
-      title: 'Payment Confirmed',
+      title: 'Payment Confirmed'.tr,
       message:
-      'Your payment has been verified successfully. Your place in the competition is confirmed.',
+      'Your payment has been verified successfully. Your place in the competition is confirmed.'.tr,
       color: e7mGreen,
     );
   }
@@ -561,9 +562,9 @@ class _RetryNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return _NoticeCard(
       icon: Icons.refresh_rounded,
-      title: 'Payment Rejected',
+      title: 'Payment Rejected'.tr,
       message:
-      'Your previous payment was rejected. You can submit a new payment if the registration is still valid.',
+      'Your previous payment was rejected. You can submit a new payment if the registration is still valid.'.tr,
       color: Colors.redAccent,
     );
   }
@@ -687,8 +688,8 @@ class _BottomAction extends StatelessWidget {
                   BorderRadius.circular(15),
                 ),
               ),
-              child: const Text(
-                'Done',
+              child: Text(
+                'Done'.tr,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
@@ -729,7 +730,7 @@ class _BottomAction extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Waiting for Review',
+                  'Waiting for Review'.tr,
                   style: TextStyle(
                     color: Colors.grey.shade700,
                     fontSize: 14,
@@ -764,8 +765,8 @@ class _BottomAction extends StatelessWidget {
                 Icons.refresh_rounded,
                 size: 20,
               ),
-              label: const Text(
-                'Retry Payment',
+              label: Text(
+                'Retry Payment'.tr,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
@@ -970,81 +971,81 @@ _PaymentStatusConfig _paymentStatusConfig(
     ) {
   switch (status) {
     case 'pending':
-      return const _PaymentStatusConfig(
-        label: 'PENDING',
-        title: 'Payment Pending',
+      return _PaymentStatusConfig(
+        label: 'PENDING'.tr,
+        title: 'Payment Pending'.tr,
         description:
-        'Your payment has not been completed yet.',
+        'Your payment has not been completed yet.'.tr,
         icon: Icons.pending_actions_rounded,
         color: Colors.orange,
       );
 
     case 'submitted':
-      return const _PaymentStatusConfig(
-        label: 'UNDER REVIEW',
-        title: 'Payment Submitted',
+      return _PaymentStatusConfig(
+        label: 'UNDER REVIEW'.tr,
+        title: 'Payment Submitted'.tr,
         description:
-        'Your payment proof has been received and is waiting for verification.',
+        'Your payment proof has been received and is waiting for verification.'.tr,
         icon: Icons.hourglass_top_rounded,
         color: Color(0xFF7CC000),
       );
 
     case 'paid':
-      return const _PaymentStatusConfig(
-        label: 'PAID',
-        title: 'Payment Confirmed',
+      return _PaymentStatusConfig(
+        label: 'PAID'.tr,
+        title: 'Payment Confirmed'.tr,
         description:
-        'Your payment has been verified successfully.',
+        'Your payment has been verified successfully.'.tr,
         icon: Icons.check_circle_rounded,
         color: Color(0xFF7CC000),
       );
 
     case 'failed':
-      return const _PaymentStatusConfig(
-        label: 'REJECTED',
-        title: 'Payment Rejected',
+      return _PaymentStatusConfig(
+        label: 'REJECTED'.tr,
+        title: 'Payment Rejected'.tr,
         description:
-        'Your payment could not be verified.',
+        'Your payment could not be verified.'.tr,
         icon: Icons.cancel_rounded,
         color: Colors.redAccent,
       );
 
     case 'expired':
-      return const _PaymentStatusConfig(
-        label: 'EXPIRED',
-        title: 'Payment Expired',
+      return _PaymentStatusConfig(
+        label: 'EXPIRED'.tr,
+        title: 'Payment Expired'.tr,
         description:
-        'The payment period for this transaction has expired.',
+        'The payment period for this transaction has expired.'.tr,
         icon: Icons.timer_off_rounded,
         color: Colors.redAccent,
       );
 
     case 'refunded':
-      return const _PaymentStatusConfig(
-        label: 'REFUNDED',
-        title: 'Payment Refunded',
+      return _PaymentStatusConfig(
+        label: 'REFUNDED'.tr,
+        title: 'Payment Refunded'.tr,
         description:
-        'This payment has been refunded.',
+        'This payment has been refunded.'.tr,
         icon: Icons.undo_rounded,
         color: Color(0xFF082B5C),
       );
 
     case 'partially_refunded':
-      return const _PaymentStatusConfig(
-        label: 'PARTIALLY REFUNDED',
-        title: 'Partially Refunded',
+      return _PaymentStatusConfig(
+        label: 'PARTIALLY REFUNDED'.tr,
+        title: 'Partially Refunded'.tr,
         description:
-        'Part of this payment has been refunded.',
+        'Part of this payment has been refunded.'.tr,
         icon: Icons.currency_exchange_rounded,
         color: Color(0xFF082B5C),
       );
 
     default:
-      return const _PaymentStatusConfig(
-        label: 'UNKNOWN',
-        title: 'Payment Status',
+      return _PaymentStatusConfig(
+        label: 'UNKNOWN'.tr,
+        title: 'Payment Status'.tr,
         description:
-        'The current payment status could not be determined.',
+        'The current payment status could not be determined.'.tr,
         icon: Icons.help_outline_rounded,
         color: Color(0xFF607080),
       );
@@ -1058,10 +1059,10 @@ _PaymentStatusConfig _paymentStatusConfig(
 String _paymentMethodLabel(String value) {
   switch (value.toLowerCase()) {
     case 'wallet':
-      return 'Wallet';
+      return 'Wallet'.tr;
 
     case 'instapay':
-      return 'InstaPay';
+      return 'InstaPay'.tr;
 
     default:
       return value;

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/owner_booking_model.dart';
 import '../../providers/owner_bookings_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class OwnerBookingsScreen extends StatelessWidget {
   const OwnerBookingsScreen({super.key});
@@ -46,8 +47,8 @@ class _OwnerBookingsViewState
             elevation: 0,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
-            title: const Text(
-              'Bookings',
+            title: Text(
+              'Bookings'.tr,
               style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w700,
@@ -55,7 +56,7 @@ class _OwnerBookingsViewState
             ),
             actions: [
               IconButton(
-                tooltip: 'Refresh',
+                tooltip: 'Refresh'.tr,
                 onPressed: provider.loading
                     ? null
                     : provider.refreshBookings,
@@ -137,7 +138,7 @@ class _OwnerBookingsViewState
         children: [
           Expanded(
             child: _statCard(
-              title: 'Total',
+              title: 'Total'.tr,
               value: provider.totalBookings,
               icon: Icons.calendar_month_rounded,
             ),
@@ -145,7 +146,7 @@ class _OwnerBookingsViewState
           const SizedBox(width: 10),
           Expanded(
             child: _statCard(
-              title: 'Pending',
+              title: 'Pending'.tr,
               value: provider.pendingBookings,
               icon: Icons.pending_actions_rounded,
             ),
@@ -153,7 +154,7 @@ class _OwnerBookingsViewState
           const SizedBox(width: 10),
           Expanded(
             child: _statCard(
-              title: 'Confirmed',
+              title: 'Confirmed'.tr,
               value: provider.confirmedBookings,
               icon: Icons.check_circle_outline_rounded,
             ),
@@ -251,7 +252,7 @@ class _OwnerBookingsViewState
                 ),
               ),
               child: Text(
-                _tabs[index],
+                _tabs[index].tr,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -354,10 +355,10 @@ class _OwnerBookingsViewState
 
             _buildInfoRow(
               icon: Icons.person_outline_rounded,
-              title: 'Player',
+              title: 'Player'.tr,
               value: _displayValue(
                 booking.playerName,
-                fallback: 'Unknown player',
+                fallback: 'Unknown player'.tr,
               ),
             ),
 
@@ -365,10 +366,10 @@ class _OwnerBookingsViewState
 
             _buildInfoRow(
               icon: Icons.stadium_outlined,
-              title: 'Stadium',
+              title: 'Stadium'.tr,
               value: _displayValue(
                 booking.pitchName,
-                fallback: 'Unknown stadium',
+                fallback: 'Unknown stadium'.tr,
               ),
             ),
 
@@ -377,7 +378,7 @@ class _OwnerBookingsViewState
               const SizedBox(height: 7),
               _buildInfoRow(
                 icon: Icons.location_on_outlined,
-                title: 'Address',
+                title: 'Address'.tr,
                 value: booking.pitchAddress!,
               ),
             ],
@@ -386,7 +387,7 @@ class _OwnerBookingsViewState
 
             _buildInfoRow(
               icon: Icons.calendar_today_outlined,
-              title: 'Date',
+              title: 'Date'.tr,
               value: _formatDate(
                 booking.slotDate,
               ),
@@ -396,7 +397,7 @@ class _OwnerBookingsViewState
 
             _buildInfoRow(
               icon: Icons.access_time_rounded,
-              title: 'Time',
+              title: 'Time'.tr,
               value: _formatTimeRange(
                 booking.startTime,
                 booking.endTime,
@@ -444,8 +445,8 @@ class _OwnerBookingsViewState
             crossAxisAlignment:
             CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Booking',
+              Text(
+                'Booking'.tr,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey,
@@ -593,24 +594,24 @@ class _OwnerBookingsViewState
       child: Column(
         children: [
           _paymentRow(
-            'Total',
+            'Total'.tr,
             _money(booking.totalPrice),
             bold: true,
           ),
           const SizedBox(height: 8),
           _paymentRow(
-            'Deposit',
+            'Deposit'.tr,
             _money(booking.depositAmount),
           ),
           const SizedBox(height: 8),
           _paymentRow(
-            'Remaining',
+            'Remaining'.tr,
             _money(booking.remainingAmount),
           ),
           if (booking.paymentStatus != null) ...[
             const SizedBox(height: 8),
             _paymentRow(
-              'Payment status',
+              'Payment status'.tr,
               _capitalize(
                 booking.paymentStatus!,
               ),
@@ -704,8 +705,8 @@ class _OwnerBookingsViewState
                 BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Reject',
+            child: Text(
+              'Reject'.tr,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
               ),
@@ -733,8 +734,8 @@ class _OwnerBookingsViewState
                 BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Approve',
+            child: Text(
+              'Approve'.tr,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
               ),
@@ -758,11 +759,11 @@ class _OwnerBookingsViewState
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Approve booking?',
+          title: Text(
+            'Approve booking?'.tr,
           ),
           content: Text(
-            'Are you sure you want to approve booking #${booking.id}?',
+            'Are you sure you want to approve booking #{id}?'.trArgs({'id': booking.id}),
           ),
           actions: [
             TextButton(
@@ -772,7 +773,7 @@ class _OwnerBookingsViewState
                   false,
                 );
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () {
@@ -786,7 +787,7 @@ class _OwnerBookingsViewState
                 const Color(0xFF7CC000),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Approve'),
+              child: Text('Approve'.tr),
             ),
           ],
         );
@@ -807,7 +808,7 @@ class _OwnerBookingsViewState
     if (success) {
       _showMessage(
         context,
-        'Booking approved successfully',
+        'Booking approved successfully'.tr,
       );
     } else if (provider.errorMessage != null) {
       _showMessage(
@@ -831,11 +832,11 @@ class _OwnerBookingsViewState
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Reject booking?',
+          title: Text(
+            'Reject booking?'.tr,
           ),
           content: Text(
-            'Are you sure you want to reject booking #${booking.id}?',
+            'Are you sure you want to reject booking #{id}?'.trArgs({'id': booking.id}),
           ),
           actions: [
             TextButton(
@@ -845,7 +846,7 @@ class _OwnerBookingsViewState
                   false,
                 );
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () {
@@ -859,7 +860,7 @@ class _OwnerBookingsViewState
                 const Color(0xFFC0392B),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Reject'),
+              child: Text('Reject'.tr),
             ),
           ],
         );
@@ -880,7 +881,7 @@ class _OwnerBookingsViewState
     if (success) {
       _showMessage(
         context,
-        'Booking rejected successfully',
+        'Booking rejected successfully'.tr,
       );
     } else if (provider.errorMessage != null) {
       _showMessage(
@@ -912,8 +913,8 @@ class _OwnerBookingsViewState
               color: Colors.redAccent,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Something went wrong',
+            Text(
+              'Something went wrong'.tr,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -922,7 +923,7 @@ class _OwnerBookingsViewState
             const SizedBox(height: 8),
             Text(
               provider.errorMessage ??
-                  'Unable to load bookings.',
+                  'Unable to load bookings.'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade600,
@@ -931,7 +932,7 @@ class _OwnerBookingsViewState
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: provider.loadBookings,
-              child: const Text('Try Again'),
+              child: Text('Try Again'.tr),
             ),
           ],
         ),
@@ -988,8 +989,8 @@ class _OwnerBookingsViewState
 
   Widget _buildEmptyState() {
     final title = _selectedTab == 0
-        ? 'No bookings yet'
-        : 'No ${_tabs[_selectedTab].toLowerCase()} bookings';
+        ? 'No bookings yet'.tr
+        : 'No ${_tabs[_selectedTab].toLowerCase()} bookings'.tr;
 
     return Center(
       child: Padding(
@@ -1022,7 +1023,7 @@ class _OwnerBookingsViewState
             ),
             const SizedBox(height: 6),
             Text(
-              'Bookings will appear here.',
+              'Bookings will appear here.'.tr,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade600,
@@ -1050,12 +1051,12 @@ class _OwnerBookingsViewState
   }
 
   String _money(double value) {
-    return '${value.toStringAsFixed(2)} EGP';
+    return '{amount} EGP'.trArgs({'amount': value.toStringAsFixed(2)});
   }
 
   String _formatDate(String? date) {
     if (date == null || date.trim().isEmpty) {
-      return 'Not available';
+      return 'Not available'.tr;
     }
 
     return date;
@@ -1066,7 +1067,7 @@ class _OwnerBookingsViewState
       String? end,
       ) {
     if (start == null || start.isEmpty) {
-      return 'Not available';
+      return 'Not available'.tr;
     }
 
     if (end == null || end.isEmpty) {
@@ -1079,8 +1080,9 @@ class _OwnerBookingsViewState
   String _capitalize(String value) {
     if (value.isEmpty) return value;
 
-    return value[0].toUpperCase() +
-        value.substring(1).toLowerCase();
+    return (value[0].toUpperCase() +
+        value.substring(1).toLowerCase())
+        .tr;
   }
 
   void _showMessage(

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:e7m/shared/localization/language_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 import 'package:e7m/core/network/api_client.dart';
 
 import 'package:e7m/welcome_screen.dart';
 import 'package:e7m/features/player/profile/presentation/providers/player_profile_provider.dart';
 import 'package:e7m/features/player/settings/settings_screen.dart';
 import 'package:e7m/features/player/academy/presentation/screens/my_academy_enrollments_screen.dart';
+import 'package:e7m/features/auth/presentation/controllers/auth_controller.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -90,30 +92,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // HELPERS
   // ============================================================
 
-  String _value(String key, String fallback) {
+  /// Raw trimmed value from the profile JSON, or null when missing/empty.
+  String? _raw(String key) {
     final value = _profile?[key];
 
-    if (value == null) {
-      return fallback;
-    }
+    if (value == null) return null;
 
     final text = value.toString().trim();
 
-    if (text.isEmpty || text == 'null') {
-      return fallback;
-    }
+    if (text.isEmpty || text == 'null') return null;
 
     return text;
   }
 
-  String _formatValue(String key, String fallback) {
-    final value = _value(key, fallback);
+  /// Raw value, or the translated [fallback] when missing.
+  String _text(String key, String fallback) {
+    return _raw(key) ?? fallback.tr;
+  }
 
-    if (value == fallback) {
-      return fallback;
-    }
+  /// "midfielder" / "skill_level" -> "Midfielder" / "Skill Level",
+  /// then translated (values like Midfielder, Intermediate...).
+  String _formatted(String key) {
+    final value = _raw(key);
 
-    return value
+    if (value == null) return 'Not added'.tr;
+
+    final pretty = value
         .replaceAll('_', ' ')
         .split(' ')
         .map(
@@ -122,6 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : '${word[0].toUpperCase()}${word.substring(1)}',
     )
         .join(' ');
+
+    return pretty.tr;
   }
 
   String _getImageUrl() {
@@ -151,86 +157,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '$serverUrl/$imagePath';
   }
 
-  String _displayName() {
-    final name = _value('full_name', 'Player');
+  String _displayName() => _text('full_name', 'Player');
 
-    if (name.trim().isEmpty) {
-      return 'Player';
-    }
+  String _displayEmail() => _text('email', 'No email');
 
-    return name;
-  }
+  String _displayPhone() => _text('phone', 'Not added');
 
-  String _displayEmail() {
-    return _value('email', 'No email');
-  }
+  String _displayCity() => _formatted('city');
 
-  String _displayPhone() {
-    return _value('phone', 'Not added');
-  }
+  String _displayPosition() => _formatted('position');
 
-  String _displayCity() {
-    return _formatValue('city', 'Not added');
-  }
+  String _displayLevel() => _formatted('skill_level');
 
-  String _displayPosition() {
-    return _formatValue('position', 'Not added');
-  }
+  String _displayPlayingStyle() => _formatted('playing_style');
 
-  String _displayLevel() {
-    return _formatValue('skill_level', 'Not added');
-  }
-
-  String _displayPlayingStyle() {
-    return _formatValue('playing_style', 'Not added');
-  }
-
-  String _displayPreferredFoot() {
-    return _formatValue('preferred_foot', 'Not added');
-  }
+  String _displayPreferredFoot() => _formatted('preferred_foot');
 
   String _displayHeight() {
-    final value = _value('height', '');
-
-    if (value.isEmpty) {
-      return 'Not added';
-    }
-
-    return '$value cm';
+    final value = _raw('height');
+    if (value == null) return 'Not added'.tr;
+    return '{value} cm'.trArgs({'value': value});
   }
 
   String _displayWeight() {
-    final value = _value('weight', '');
-
-    if (value.isEmpty) {
-      return 'Not added';
-    }
-
-    return '$value kg';
+    final value = _raw('weight');
+    if (value == null) return 'Not added'.tr;
+    return '{value} kg'.trArgs({'value': value});
   }
 
   String _displayExperience() {
-    final value = _value('experience', '');
-
-    if (value.isEmpty) {
-      return 'Not added';
-    }
-
-    return '$value Years';
+    final value = _raw('experience');
+    if (value == null) return 'Not added'.tr;
+    return '{value} Years'.trArgs({'value': value});
   }
 
-  String _displayDateOfBirth() {
-    final value = _value('date_of_birth', 'Not added');
+  String _displayDateOfBirth() => _text('date_of_birth', 'Not added');
 
-    if (value == 'Not added') {
-      return value;
-    }
+  String _displayBio() => _text('bio', 'No bio added yet.');
 
-    return value;
-  }
+  /// Count shown in a stat card. Returns null (card hidden) while loading
+  /// or when the API doesn't send this key.
+  String? _count(String key) {
+    if (_isLoading || _profile == null) return null;
 
-  String _displayBio() {
-    return _value('bio', 'No bio added yet.');
+    final value = _profile![key];
+
+    if (value == null) return null;
+
+    return value.toString();
   }
 
   // ============================================================
@@ -255,6 +229,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundImage: NetworkImage(imageUrl),
       onBackgroundImageError: (_, __) {},
       child: null,
+    );
+  }
+
+  // ============================================================
+  // STATS ROW
+  // Favorites is intentionally hidden until the backend supports it.
+  // ============================================================
+
+  Widget _buildStats(String Function(String) t) {
+    final cards = <Widget>[];
+
+    void add(String? number, String title) {
+      if (number == null) return;
+
+      if (cards.isNotEmpty) {
+        cards.add(const SizedBox(width: 14));
+      }
+
+      cards.add(
+        Expanded(
+          child: statCard(context, number, title, () {}),
+        ),
+      );
+    }
+
+    add(_count('bookings_count'), t('bookings'));
+    add(_count('teams_count'), t('teams'));
+
+    if (cards.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30),
+      child: Row(children: cards),
     );
   }
 
@@ -341,38 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // STATS
                 // ========================================================
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: statCard(
-                        context,
-                        "—",
-                        t("bookings"),
-                            () {},
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: statCard(
-                        context,
-                        "—",
-                        t("favorites"),
-                            () {},
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: statCard(
-                        context,
-                        "—",
-                        t("teams"),
-                            () {},
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
+                _buildStats(t),
 
                 // ========================================================
                 // PLAYER INFORMATION
@@ -402,8 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                            const EditProfileScreen(),
+                            builder: (_) => const EditProfileScreen(),
                           ),
                         );
 
@@ -454,8 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         builder: (_) {
                           return AlertDialog(
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             title: Text(
                               t('logout'),
@@ -477,12 +453,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
+                                  final authController =
+                                  context.read<AuthController>();
+
+                                  Navigator.pop(context);
+
+                                  await authController.logout();
+
+                                  if (!mounted) return;
+
                                   Navigator.pushAndRemoveUntil(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                      const WelcomeScreen(),
+                                      builder: (_) => const WelcomeScreen(),
                                     ),
                                         (route) => false,
                                   );
@@ -576,9 +560,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 10),
 
-            const Text(
-              'Unable to load profile',
-              style: TextStyle(
+            Text(
+              'Unable to load profile'.tr,
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
@@ -586,9 +570,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 8),
 
-            const Text(
-              'Please try again.',
-              style: TextStyle(
+            Text(
+              'Please try again.'.tr,
+              style: const TextStyle(
                 color: Colors.grey,
               ),
             ),
@@ -603,8 +587,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: primaryGreen,
                 ),
               ),
-              child: const Text(
-                'Retry',
+              child: Text(
+                'Retry'.tr,
               ),
             ),
           ],
@@ -634,9 +618,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildProfileImage(),
 
-              Positioned(
+              PositionedDirectional(
                 bottom: 0,
-                right: 0,
+                end: 0,
                 child: Container(
                   width: 34,
                   height: 34,
@@ -726,61 +710,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _infoItem(
               icon: Icons.phone_outlined,
-              title: 'Phone',
+              title: 'Phone'.tr,
               value: _displayPhone(),
             ),
 
             _infoItem(
               icon: Icons.location_on_outlined,
-              title: 'City',
+              title: 'City'.tr,
               value: _displayCity(),
             ),
 
             _infoItem(
               icon: Icons.cake_outlined,
-              title: 'Date of Birth',
+              title: 'Date of Birth'.tr,
               value: _displayDateOfBirth(),
             ),
 
             _infoItem(
               icon: Icons.sports_soccer_outlined,
-              title: 'Position',
+              title: 'Position'.tr,
               value: _displayPosition(),
             ),
 
             _infoItem(
               icon: Icons.trending_up_outlined,
-              title: 'Skill Level',
+              title: 'Skill Level'.tr,
               value: _displayLevel(),
             ),
 
             _infoItem(
               icon: Icons.style_outlined,
-              title: 'Playing Style',
+              title: 'Playing Style'.tr,
               value: _displayPlayingStyle(),
             ),
 
             _infoItem(
               icon: Icons.directions_run_outlined,
-              title: 'Preferred Foot',
+              title: 'Preferred Foot'.tr,
               value: _displayPreferredFoot(),
             ),
 
             _infoItem(
               icon: Icons.height_outlined,
-              title: 'Height',
+              title: 'Height'.tr,
               value: _displayHeight(),
             ),
 
             _infoItem(
               icon: Icons.monitor_weight_outlined,
-              title: 'Weight',
+              title: 'Weight'.tr,
               value: _displayWeight(),
             ),
 
             _infoItem(
               icon: Icons.history_outlined,
-              title: 'Experience',
+              title: 'Experience'.tr,
               value: _displayExperience(),
             ),
 
@@ -869,9 +853,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(width: 14),
 
-              const Text(
-                'About',
-                style: TextStyle(
+              Text(
+                'About'.tr,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

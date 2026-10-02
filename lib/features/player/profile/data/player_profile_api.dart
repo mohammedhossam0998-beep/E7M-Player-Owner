@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:e7m/core/network/api_client.dart';
 
@@ -84,11 +84,19 @@ class PlayerProfileApi {
   // ============================================================
 
   Future<Map<String, dynamic>> uploadProfileImage(
-      File image,
+      XFile image,
       ) async {
-    final response = await _apiClient.uploadFiles(
+    // XFile + bytes works on Android, iOS and Flutter Web
+    // (dart:io File does not work on web).
+    final bytes = await image.readAsBytes();
+
+    final filename =
+    image.name.contains('.') ? image.name : '${image.name}.jpg';
+
+    final response = await _apiClient.uploadBytes(
       '/player/profile/image',
-      [image],
+      bytes: bytes,
+      filename: filename,
       fieldName: 'image',
     );
 

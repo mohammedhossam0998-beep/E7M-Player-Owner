@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/support_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CreateOwnerSupportTicketScreen
     extends StatefulWidget {
@@ -59,11 +60,11 @@ class _CreateOwnerSupportTicketScreenState
     if (ticket != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(
-        const SnackBar(
+        SnackBar(
           backgroundColor:
           Color(0xff7CC000),
           content: Text(
-            'Support ticket created successfully',
+            'Support ticket created successfully'.tr,
           ),
         ),
       );
@@ -76,7 +77,7 @@ class _CreateOwnerSupportTicketScreenState
           backgroundColor: Colors.red,
           content: Text(
             provider.errorMessage ??
-                'Failed to create ticket',
+                'Failed to create ticket'.tr,
           ),
         ),
       );
@@ -96,8 +97,8 @@ class _CreateOwnerSupportTicketScreenState
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Create Support Ticket',
+        title: Text(
+          'Create Support Ticket'.tr,
           style: TextStyle(
             color: Color(0xff1E1446),
             fontWeight: FontWeight.bold,
@@ -126,9 +127,9 @@ class _CreateOwnerSupportTicketScreenState
               TextInputAction.next,
               decoration:
               InputDecoration(
-                labelText: 'Subject',
+                labelText: 'Subject'.tr,
                 hintText:
-                'What do you need help with?',
+                'What do you need help with?'.tr,
                 filled: true,
                 fillColor: Colors.white,
                 border:
@@ -144,7 +145,7 @@ class _CreateOwnerSupportTicketScreenState
               validator: (value) {
                 if (value == null ||
                     value.trim().isEmpty) {
-                  return 'Subject is required';
+                  return 'Subject is required'.tr;
                 }
 
                 return null;
@@ -159,9 +160,9 @@ class _CreateOwnerSupportTicketScreenState
               maxLines: 7,
               decoration:
               InputDecoration(
-                labelText: 'Message',
+                labelText: 'Message'.tr,
                 hintText:
-                'Describe your problem...',
+                'Describe your problem...'.tr,
                 alignLabelWithHint: true,
                 filled: true,
                 fillColor: Colors.white,
@@ -178,7 +179,7 @@ class _CreateOwnerSupportTicketScreenState
               validator: (value) {
                 if (value == null ||
                     value.trim().isEmpty) {
-                  return 'Message is required';
+                  return 'Message is required'.tr;
                 }
 
                 return null;
@@ -192,7 +193,7 @@ class _CreateOwnerSupportTicketScreenState
               initialValue: _priority,
               decoration:
               InputDecoration(
-                labelText: 'Priority',
+                labelText: 'Priority'.tr,
                 filled: true,
                 fillColor: Colors.white,
                 border:
@@ -205,18 +206,18 @@ class _CreateOwnerSupportTicketScreenState
                   BorderSide.none,
                 ),
               ),
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: 'low',
-                  child: Text('Low'),
+                  child: Text('Low'.tr),
                 ),
                 DropdownMenuItem(
                   value: 'medium',
-                  child: Text('Medium'),
+                  child: Text('Medium'.tr),
                 ),
                 DropdownMenuItem(
                   value: 'high',
-                  child: Text('High'),
+                  child: Text('High'.tr),
                 ),
               ],
               onChanged: provider.isCreating
@@ -269,8 +270,8 @@ class _CreateOwnerSupportTicketScreenState
                     Colors.white,
                   ),
                 )
-                    : const Text(
-                  'Submit Ticket',
+                    : Text(
+                  'Submit Ticket'.tr,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight:

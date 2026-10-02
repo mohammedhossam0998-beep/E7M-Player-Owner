@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../models/competition_model.dart';
 import '../../models/competition_payment_account_model.dart';
 import '../../providers/competition_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionPaymentScreen extends StatelessWidget {
   const CompetitionPaymentScreen({
@@ -86,8 +87,8 @@ class _CompetitionPaymentViewState
             color: e7mNavy,
           ),
         ),
-        title: const Text(
-          'Competition Payment',
+        title: Text(
+          'Competition Payment'.tr,
           style: TextStyle(
             color: e7mNavy,
             fontSize: 19,
@@ -106,7 +107,7 @@ class _CompetitionPaymentViewState
               provider.paymentAccounts.isEmpty) {
             return _ErrorView(
               message: provider.errorMessage ??
-                  'Failed to load payment accounts.',
+                  'Failed to load payment accounts.'.tr,
               onRetry: () {
                 provider.loadPaymentAccounts(
                   widget.competition.id,
@@ -174,8 +175,8 @@ class _CompetitionPaymentViewState
                   ),
                 ),
                 const SizedBox(height: 22),
-                const Text(
-                  'Payment Proof',
+                Text(
+                  'Payment Proof'.tr,
                   style: TextStyle(
                     color: e7mNavy,
                     fontSize: 18,
@@ -187,8 +188,8 @@ class _CompetitionPaymentViewState
                   leading: _SourceIcon(
                     icon: Icons.photo_library_outlined,
                   ),
-                  title: const Text(
-                    'Choose from Gallery',
+                  title: Text(
+                    'Choose from Gallery'.tr,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                     ),
@@ -204,8 +205,8 @@ class _CompetitionPaymentViewState
                   leading: _SourceIcon(
                     icon: Icons.camera_alt_outlined,
                   ),
-                  title: const Text(
-                    'Take a Photo',
+                  title: Text(
+                    'Take a Photo'.tr,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                     ),
@@ -247,7 +248,7 @@ class _CompetitionPaymentViewState
         SnackBar(
           backgroundColor: Colors.redAccent,
           content: Text(
-            'Failed to select image: $error',
+            'Failed to select image: {error}'.trArgs({'error': error}),
           ),
         ),
       );
@@ -263,7 +264,7 @@ class _CompetitionPaymentViewState
       ) async {
     if (_selectedAccount == null) {
       _showMessage(
-        'Please select a payment method.',
+        'Please select a payment method.'.tr,
         isError: true,
       );
       return;
@@ -274,7 +275,7 @@ class _CompetitionPaymentViewState
 
     if (transactionReference.length < 3) {
       _showMessage(
-        'Please enter the transaction reference.',
+        'Please enter the transaction reference.'.tr,
         isError: true,
       );
       return;
@@ -282,7 +283,7 @@ class _CompetitionPaymentViewState
 
     if (_proofImage == null) {
       _showMessage(
-        'Please upload your payment proof.',
+        'Please upload your payment proof.'.tr,
         isError: true,
       );
       return;
@@ -310,7 +311,7 @@ class _CompetitionPaymentViewState
       } else {
         _showMessage(
           provider.errorMessage ??
-              'Failed to submit payment.',
+              'Failed to submit payment.'.tr,
           isError: true,
         );
       }
@@ -356,8 +357,8 @@ class _CompetitionPaymentViewState
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Payment Submitted',
+              Text(
+                'Payment Submitted'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: e7mNavy,
@@ -367,7 +368,7 @@ class _CompetitionPaymentViewState
               ),
               const SizedBox(height: 10),
               Text(
-                'Your payment proof has been submitted successfully. The competition owner will review it.',
+                'Your payment proof has been submitted successfully. The competition owner will review it.'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
@@ -393,8 +394,8 @@ class _CompetitionPaymentViewState
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Done',
+                  child: Text(
+                    'Done'.tr,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                     ),
@@ -483,9 +484,9 @@ class _PaymentContent extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.payments_outlined,
-            title: 'Entry Fee',
+            title: 'Entry Fee'.tr,
           ),
 
           const SizedBox(height: 12),
@@ -496,9 +497,9 @@ class _PaymentContent extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Payment Method',
+            title: 'Payment Method'.tr,
           ),
 
           const SizedBox(height: 12),
@@ -528,9 +529,9 @@ class _PaymentContent extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.receipt_long_outlined,
-            title: 'Transaction Reference',
+            title: 'Transaction Reference'.tr,
           ),
 
           const SizedBox(height: 12),
@@ -540,7 +541,7 @@ class _PaymentContent extends StatelessWidget {
             textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               hintText:
-              'Enter transaction reference',
+              'Enter transaction reference'.tr,
               prefixIcon: const Icon(
                 Icons.tag_rounded,
                 color: e7mGreen,
@@ -576,9 +577,9 @@ class _PaymentContent extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.image_outlined,
-            title: 'Payment Proof',
+            title: 'Payment Proof'.tr,
           ),
 
           const SizedBox(height: 12),
@@ -625,7 +626,7 @@ class _PaymentContent extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-                  : const Row(
+                  : Row(
                 mainAxisAlignment:
                 MainAxisAlignment.center,
                 children: [
@@ -635,7 +636,7 @@ class _PaymentContent extends StatelessWidget {
                   ),
                   SizedBox(width: 9),
                   Text(
-                    'Submit Payment',
+                    'Submit Payment'.tr,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight:
@@ -699,8 +700,8 @@ class _CompetitionSummary extends StatelessWidget {
               crossAxisAlignment:
               CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Payment for',
+                Text(
+                  'Payment for'.tr,
                   style: TextStyle(
                     color: Colors.white60,
                     fontSize: 11,
@@ -765,9 +766,9 @@ class _AmountCard extends StatelessWidget {
             size: 27,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Amount to pay',
+              'Amount to pay'.tr,
               style: TextStyle(
                 color: e7mNavy,
                 fontSize: 14,
@@ -776,7 +777,7 @@ class _AmountCard extends StatelessWidget {
             ),
           ),
           Text(
-            '${_formatMoney(amount)} EGP',
+            '{amount} EGP'.trArgs({'amount': _formatMoney(amount)}),
             style: const TextStyle(
               color: e7mGreen,
               fontSize: 20,
@@ -864,8 +865,8 @@ class _PaymentAccountCard extends StatelessWidget {
                 children: [
                   Text(
                     isWallet
-                        ? 'Wallet'
-                        : 'InstaPay',
+                        ? 'Wallet'.tr
+                        : 'InstaPay'.tr,
                     style: const TextStyle(
                       color: e7mNavy,
                       fontSize: 14,
@@ -983,8 +984,8 @@ class _ProofCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Upload Payment Proof',
+              Text(
+                'Upload Payment Proof'.tr,
                 style: TextStyle(
                   color: Color(0xFF082B5C),
                   fontSize: 14,
@@ -993,7 +994,7 @@ class _ProofCard extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                'JPG, PNG or WEBP',
+                'JPG, PNG or WEBP'.tr,
                 style: TextStyle(
                   color: Colors.grey.shade500,
                   fontSize: 11,
@@ -1038,9 +1039,9 @@ class _ProofCard extends StatelessWidget {
                   size: 21,
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Payment proof selected',
+                    'Payment proof selected'.tr,
                     style: TextStyle(
                       color: Color(0xFF082B5C),
                       fontSize: 12,
@@ -1050,8 +1051,8 @@ class _ProofCard extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: onPick,
-                  child: const Text(
-                    'Change',
+                  child: Text(
+                    'Change'.tr,
                     style: TextStyle(
                       color: e7mGreen,
                       fontWeight: FontWeight.w800,
@@ -1061,7 +1062,7 @@ class _ProofCard extends StatelessWidget {
                 TextButton(
                   onPressed: onRemove,
                   child: Text(
-                    'Remove',
+                    'Remove'.tr,
                     style: TextStyle(
                       color: Colors.red.shade400,
                       fontWeight: FontWeight.w700,
@@ -1109,7 +1110,7 @@ class _PaymentNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Make the payment using the selected account, then upload a clear screenshot and enter the transaction reference.',
+              'Make the payment using the selected account, then upload a clear screenshot and enter the transaction reference.'.tr,
               style: TextStyle(
                 color: Colors.grey.shade700,
                 fontSize: 12,
@@ -1201,8 +1202,8 @@ class _NoAccountsView extends StatelessWidget {
             size: 36,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'No payment accounts available',
+          Text(
+            'No payment accounts available'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF082B5C),
@@ -1212,7 +1213,7 @@ class _NoAccountsView extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            'The competition owner has not added an active payment account.',
+            'The competition owner has not added an active payment account.'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -1265,8 +1266,8 @@ class _LoadingView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Loading payment accounts...',
+          Text(
+            'Loading payment accounts...'.tr,
             style: TextStyle(
               color: e7mNavy,
               fontSize: 13,
@@ -1310,8 +1311,8 @@ class _ErrorView extends StatelessWidget {
               size: 48,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Unable to load payment accounts',
+            Text(
+              'Unable to load payment accounts'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: e7mNavy,
@@ -1336,8 +1337,8 @@ class _ErrorView extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
               ),
-              child: const Text(
-                'Try Again',
+              child: Text(
+                'Try Again'.tr,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                 ),

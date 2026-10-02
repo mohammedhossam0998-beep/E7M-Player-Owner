@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:e7m/core/network/api_client.dart';
 import 'package:e7m/core/services/token_storage.dart';
+import 'package:e7m/core/notifications/fcm_service.dart';
 
 class AuthController extends ChangeNotifier {
   final ApiClient apiClient = ApiClient();
+
+  // ============================================================
+  // API PREFIX
+  //
+  // Backend mounts auth routes on /api/auth.
+  // ApiClient does NOT add /api automatically.
+  // ============================================================
+
+  static const String _authBase = '/api/auth';
 
   // ============================================================
   // GENERAL STATE
@@ -37,9 +47,9 @@ class AuthController extends ChangeNotifier {
 
   String? get verificationEmail => _verificationEmail;
 
-  int? _registrationId;
+  String? _registrationToken;
 
-  int? get registrationId => _registrationId;
+  String? get registrationToken => _registrationToken;
 
   bool _otpVerified = false;
 
@@ -85,7 +95,7 @@ class AuthController extends ChangeNotifier {
   void clearVerificationState() {
     _requiresVerification = false;
     _verificationEmail = null;
-    _registrationId = null;
+    _registrationToken = null;
     _otpVerified = false;
 
     notifyListeners();
@@ -204,7 +214,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/login',
+        '$_authBase/login',
         {
           'email': email.trim(),
           'password': password,
@@ -244,6 +254,19 @@ class AuthController extends ChangeNotifier {
 
         if (_token != null && _token!.isNotEmpty) {
           await TokenStorage.saveToken(_token!);
+
+          // Register FCM after authentication
+          try {
+            await FCMService.registerCurrentDevice();
+
+            debugPrint(
+              '📱 FCM DEVICE REGISTERED AFTER LOGIN',
+            );
+          } catch (e) {
+            debugPrint(
+              '⚠️ FCM REGISTRATION AFTER LOGIN FAILED: $e',
+            );
+          }
         }
 
         _requiresVerification = false;
@@ -345,11 +368,12 @@ class AuthController extends ChangeNotifier {
       // ========================================================
 
       final response = await apiClient.post(
-        '/auth/register',
+        '$_authBase/register',
         {
           'full_name': name.trim(),
           'email': email.trim(),
           'phone': phone.trim(),
+          'city': city.trim(),
 
           // IMPORTANT:
           // Do NOT hardcode player here.
@@ -368,17 +392,6 @@ class AuthController extends ChangeNotifier {
           response['success'] == true &&
           response['requiresVerification'] == true) {
         final registration = response['registration'];
-
-        // ------------------------------------------------------
-        // SAVE REGISTRATION ID
-        // ------------------------------------------------------
-
-        if (registration is Map &&
-            registration['id'] != null) {
-          _registrationId = int.tryParse(
-            registration['id'].toString(),
-          );
-        }
 
         // ------------------------------------------------------
         // SAVE VERIFICATION DATA
@@ -400,7 +413,6 @@ class AuthController extends ChangeNotifier {
 
         debugPrint('✅ REGISTRATION STARTED');
         debugPrint('👤 ROLE: $role');
-        debugPrint('🆔 REGISTRATION ID: $_registrationId');
         debugPrint('📧 EMAIL: $_verificationEmail');
 
         return true;
@@ -453,7 +465,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/send-otp',
+        '$_authBase/send-otp',
         {
           'email': email.trim(),
         },
@@ -511,7 +523,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/verify-otp',
+        '$_authBase/verify-otp',
         {
           'email': email.trim(),
           'otp': otp.trim(),
@@ -520,14 +532,18 @@ class AuthController extends ChangeNotifier {
 
       if (response is Map &&
           response['success'] == true) {
-        final registration = response['registration'];
+        final registrationToken =
+        response['registrationToken']?.toString();
 
-        if (registration is Map &&
-            registration['id'] != null) {
-          _registrationId = int.tryParse(
-            registration['id'].toString(),
+        if (registrationToken == null ||
+            registrationToken.isEmpty) {
+          _setError(
+            'Registration token is missing. Please verify the code again.',
           );
+          return false;
         }
+
+        _registrationToken = registrationToken;
 
         _otpVerified = true;
 
@@ -546,7 +562,7 @@ class AuthController extends ChangeNotifier {
         notifyListeners();
 
         debugPrint('✅ OTP VERIFIED');
-        debugPrint('🆔 REGISTRATION ID: $_registrationId');
+        debugPrint('🔐 REGISTRATION TOKEN RECEIVED');
         debugPrint('➡️ NEXT STEP: SET PASSWORD');
 
         return true;
@@ -595,7 +611,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/resend-otp',
+        '$_authBase/resend-otp',
         {
           'email': email.trim(),
         },
@@ -634,10 +650,15 @@ class AuthController extends ChangeNotifier {
 
   // ============================================================
   // SET PASSWORD
+  //
+  // IMPORTANT:
+  // Player receives a JWT immediately.
+  // Owner does NOT receive a JWT until admin approval —
+  // the backend still returns success: true + user in that case.
   // ============================================================
 
   Future<bool> setPassword({
-    required int registrationId,
+    required String registrationToken,
     required String password,
     required String confirmPassword,
   }) async {
@@ -669,9 +690,9 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/set-password',
+        '$_authBase/set-password',
         {
-          'registration_id': registrationId,
+          'registration_token': registrationToken,
           'password': password,
           'confirm_password': confirmPassword,
         },
@@ -679,19 +700,28 @@ class AuthController extends ChangeNotifier {
 
       if (response is Map &&
           response['success'] == true &&
-          response['token'] != null &&
           response['user'] != null) {
-        _token = response['token'].toString();
+        final responseToken = response['token']?.toString();
 
         _user = Map<String, dynamic>.from(
           response['user'],
         );
 
-        await TokenStorage.saveToken(
-          _token!,
-        );
+        // Player receives JWT.
+        // Owner does NOT receive JWT until admin approval.
+        if (responseToken != null && responseToken.isNotEmpty) {
+          _token = responseToken;
 
-        _registrationId = null;
+          await TokenStorage.saveToken(_token!);
+
+          debugPrint('🔐 TOKEN SAVED');
+        } else {
+          _token = null;
+
+          debugPrint('⏳ OWNER PENDING APPROVAL - NO JWT');
+        }
+
+        _registrationToken = null;
         _otpVerified = false;
         _requiresVerification = false;
         _verificationEmail = null;
@@ -701,8 +731,10 @@ class AuthController extends ChangeNotifier {
         didSucceed = true;
 
         debugPrint('✅ ACCOUNT CREATED');
-        debugPrint('🔐 TOKEN SAVED');
         debugPrint('👤 ROLE: $role');
+        debugPrint(
+          '📋 APPROVAL STATUS: ${_user?['approval_status']}',
+        );
       } else {
         _errorMessage = response is Map
             ? response['message']?.toString() ??
@@ -778,7 +810,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/forgot-password',
+        '$_authBase/forgot-password',
         {
           'email': email.trim(),
         },
@@ -832,7 +864,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/verify-reset-otp',
+        '$_authBase/verify-reset-otp',
         {
           'email': email.trim(),
           'otp': otp.trim(),
@@ -903,7 +935,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/reset-password',
+        '$_authBase/reset-password',
         {
           'token': token,
           'new_password': password,
@@ -975,7 +1007,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response = await apiClient.post(
-        '/auth/reset-password',
+        '$_authBase/reset-password',
         {
           'email': email.trim(),
           'otp': otp.trim(),
@@ -1023,7 +1055,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       final response =
-      await apiClient.get('/auth/me');
+      await apiClient.get('$_authBase/me');
 
       if (response is Map) {
         if (response['user'] is Map) {
@@ -1043,6 +1075,14 @@ class AuthController extends ChangeNotifier {
 
       return false;
     } catch (e) {
+      debugPrint('❌ GET ME ERROR: $e');
+
+      // Clear invalid session
+      _token = null;
+      _user = null;
+
+      await TokenStorage.clearToken();
+
       _setError(
         _extractErrorMessage(
           e,
@@ -1062,20 +1102,48 @@ class AuthController extends ChangeNotifier {
 
   Future<bool> loadSavedToken() async {
     try {
-      final savedToken =
-      await TokenStorage.getToken();
+      final savedToken = await TokenStorage.getToken();
 
-      if (savedToken == null ||
-          savedToken.isEmpty) {
+      if (savedToken == null || savedToken.isEmpty) {
+        debugPrint('ℹ️ No saved token found');
         return false;
       }
 
+      // Restore saved JWT
       _token = savedToken;
-
       notifyListeners();
 
+      debugPrint('🔐 Saved token restored');
+
+      // Restore current user data.
+      // This is important because FCM notification routing
+      // depends on the authenticated user's role.
+      final userLoaded = await getMe();
+
+      if (!userLoaded) {
+        debugPrint('❌ Failed to restore current user');
+        return false;
+      }
+
+      debugPrint('👤 Current user restored');
+      debugPrint('👑 User role: $role');
+
+      // Register FCM device after authentication is fully restored.
+      try {
+        await FCMService.registerCurrentDevice();
+
+        debugPrint(
+          '📱 FCM DEVICE REGISTERED AFTER SESSION RESTORE',
+        );
+      } catch (e) {
+        debugPrint(
+          '⚠️ FCM REGISTRATION AFTER SESSION RESTORE FAILED: $e',
+        );
+      }
+
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('❌ LOAD SAVED TOKEN ERROR: $e');
       return false;
     }
   }
@@ -1091,7 +1159,7 @@ class AuthController extends ChangeNotifier {
 
     _requiresVerification = false;
     _verificationEmail = null;
-    _registrationId = null;
+    _registrationToken = null;
     _otpVerified = false;
 
     await TokenStorage.clearToken();

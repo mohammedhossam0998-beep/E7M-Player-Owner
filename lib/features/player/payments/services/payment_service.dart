@@ -13,13 +13,13 @@ class PaymentService {
 
   Future<dynamic> createDepositPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     return _apiClient.post(
       '/payments/deposit',
       {
         'booking_id': bookingId,
-        'payment_method': paymentMethod,
+        'owner_payment_account_id': ownerPaymentAccountId,
       },
     );
   }
@@ -30,13 +30,13 @@ class PaymentService {
 
   Future<dynamic> createFullPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     return _apiClient.post(
       '/payments/full',
       {
         'booking_id': bookingId,
-        'payment_method': paymentMethod,
+        'owner_payment_account_id': ownerPaymentAccountId,
       },
     );
   }
@@ -52,8 +52,7 @@ class PaymentService {
     return _apiClient.post(
       '/payments/$paymentId/submit',
       {
-        'transaction_reference':
-        transactionReference,
+        'transaction_reference': transactionReference,
       },
     );
   }
@@ -67,6 +66,30 @@ class PaymentService {
   }) async {
     return _apiClient.get(
       '/payments/booking/$bookingId',
+    );
+  }
+
+  // ============================================================
+  // GET AVAILABLE PAYMENT ACCOUNTS FOR BOOKING
+  // ============================================================
+  //
+  // يرجع حسابات الدفع النشطة الخاصة بمالك الملعب
+  // المرتبط بالحجز.
+  //
+  // مثال:
+  // InstaPay
+  // Vodafone Cash
+  // Orange Cash
+  // Etisalat Cash
+  // WE Pay
+  //
+  // ============================================================
+
+  Future<dynamic> getBookingPaymentAccounts({
+    required int bookingId,
+  }) async {
+    return _apiClient.get(
+      '/payments/booking/$bookingId/accounts',
     );
   }
 }

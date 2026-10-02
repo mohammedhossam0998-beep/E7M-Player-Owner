@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionHeader extends StatelessWidget {
   const CompetitionHeader({
@@ -6,13 +7,13 @@ class CompetitionHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onViewAll,
-    this.viewAllText = 'View All',
+    this.viewAllText,
   });
 
   final String title;
   final String? subtitle;
   final VoidCallback? onViewAll;
-  final String viewAllText;
+  final String? viewAllText;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +55,7 @@ class CompetitionHeader extends StatelessWidget {
           TextButton(
             onPressed: onViewAll,
             child: Text(
-              viewAllText,
+              viewAllText ?? 'View All'.tr,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
               ),

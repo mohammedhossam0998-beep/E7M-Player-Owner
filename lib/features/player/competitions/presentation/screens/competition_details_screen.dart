@@ -6,6 +6,7 @@ import '../../models/competition_goal_model.dart';
 import '../../models/competition_match_model.dart';
 import '../../providers/competition_provider.dart';
 import 'competition_payment_screen.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionDetailsScreen extends StatelessWidget {
   const CompetitionDetailsScreen({
@@ -78,8 +79,8 @@ class _CompetitionDetailsView extends StatelessWidget {
                   ),
                 ),
               ),
-              title: const Text(
-                'Competition Details',
+              title: Text(
+                'Competition Details'.tr,
                 style: TextStyle(
                   color: e7mNavy,
                   fontSize: 19,
@@ -271,59 +272,59 @@ class _CompetitionContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.info_outline_rounded,
-            title: 'Competition Information',
+            title: 'Competition Information'.tr,
           ),
           const SizedBox(height: 12),
           _InfoGrid(
             competition: competition,
           ),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.calendar_month_outlined,
-            title: 'Schedule',
+            title: 'Schedule'.tr,
           ),
           const SizedBox(height: 12),
           _ScheduleCard(
             competition: competition,
           ),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.people_outline_rounded,
-            title: 'Participants',
+            title: 'Participants'.tr,
           ),
           const SizedBox(height: 12),
           _ParticipantsCard(
             competition: competition,
           ),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.leaderboard_outlined,
-            title: 'Standings',
+            title: 'Standings'.tr,
           ),
           const SizedBox(height: 12),
           const _StandingsCard(),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.sports_soccer_rounded,
-            title: 'Goals',
+            title: 'Goals'.tr,
           ),
           const SizedBox(height: 12),
           const _GoalsCard(),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.sports_soccer_outlined,
-            title: 'Matches',
+            title: 'Matches'.tr,
           ),
           const SizedBox(height: 12),
           const _MatchesCard(),
           const SizedBox(height: 16),
           const _BracketCard(),
           const SizedBox(height: 26),
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.payments_outlined,
-            title: 'Payment',
+            title: 'Payment'.tr,
           ),
           const SizedBox(height: 12),
           _PaymentCard(
@@ -331,9 +332,9 @@ class _CompetitionContent extends StatelessWidget {
           ),
           if (_hasText(competition.refundPolicy)) ...[
             const SizedBox(height: 26),
-            const _SectionTitle(
+            _SectionTitle(
               icon: Icons.assignment_return_outlined,
-              title: 'Refund Policy',
+              title: 'Refund Policy'.tr,
             ),
             const SizedBox(height: 12),
             _SimpleCard(
@@ -381,31 +382,31 @@ class _InfoGrid extends StatelessWidget {
           children: [
             _InfoTile(
               icon: Icons.sports_soccer_rounded,
-              title: 'Type',
+              title: 'Type'.tr,
               value: _competitionType(
                 competition.competitionType,
               ),
             ),
             _InfoTile(
               icon: Icons.verified_outlined,
-              title: 'Approval',
+              title: 'Approval'.tr,
               value: _approvalMode(
                 competition.approvalMode,
               ),
             ),
             _InfoTile(
               icon: Icons.visibility_outlined,
-              title: 'Visibility',
+              title: 'Visibility'.tr,
               value: _visibility(
                 competition.visibility,
               ),
             ),
             _InfoTile(
               icon: Icons.event_available_outlined,
-              title: 'Registration',
+              title: 'Registration'.tr,
               value: competition.allowWithdrawal
-                  ? 'Withdrawal allowed'
-                  : 'No withdrawal',
+                  ? 'Withdrawal allowed'.tr
+                  : 'No withdrawal'.tr,
             ),
           ],
         );
@@ -435,7 +436,7 @@ class _ScheduleCard extends StatelessWidget {
         children: [
           _DateRow(
             icon: Icons.play_circle_outline_rounded,
-            title: 'Starts',
+            title: 'Starts'.tr,
             date: competition.startDate,
           ),
           const Padding(
@@ -458,7 +459,7 @@ class _ScheduleCard extends StatelessWidget {
           ),
           _DateRow(
             icon: Icons.flag_outlined,
-            title: 'Ends',
+            title: 'Ends'.tr,
             date: competition.endDate,
           ),
           if (competition.registrationDeadline != null) ...[
@@ -484,7 +485,7 @@ class _ScheduleCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Registration deadline',
+                        'Registration deadline'.tr,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 11,
@@ -595,7 +596,7 @@ class _StandingsCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'No standings available yet.',
+                    'No standings available yet.'.tr,
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 13,
@@ -621,7 +622,7 @@ class _StandingsCard extends StatelessWidget {
                   color: e7mNavy.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     SizedBox(
                       width: 28,
@@ -638,7 +639,7 @@ class _StandingsCard extends StatelessWidget {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Participant',
+                        'Participant'.tr,
                         style: TextStyle(
                           color: e7mNavy,
                           fontSize: 11,
@@ -697,7 +698,7 @@ class _StandingsCard extends StatelessWidget {
                     SizedBox(
                       width: 38,
                       child: Text(
-                        'Pts',
+                        'Pts'.tr,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: e7mGreen,
@@ -754,7 +755,7 @@ class _StandingRow extends StatelessWidget {
     final name =
     participantData['name']?.toString().trim().isNotEmpty == true
         ? participantData['name'].toString().trim()
-        : 'Participant';
+        : 'Participant'.tr;
 
     final played = data['played'] ?? 0;
     final wins = data['wins'] ?? 0;
@@ -927,7 +928,7 @@ class _GoalsCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'No goals recorded yet.',
+                    'No goals recorded yet.'.tr,
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 13,
@@ -973,7 +974,7 @@ class _GoalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = goal.playerName?.trim().isNotEmpty == true
         ? goal.playerName!.trim()
-        : 'Player ${goal.playerId}';
+        : 'Player {id}'.trArgs({'id': goal.playerId});
 
     return Row(
       children: [
@@ -1008,7 +1009,7 @@ class _GoalRow extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                goal.isOwnGoal ? 'Own goal' : 'Goal',
+                goal.isOwnGoal ? 'Own goal'.tr : 'Goal'.tr,
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 11,
@@ -1114,7 +1115,7 @@ class _MatchesCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'No matches available yet.',
+                    'No matches available yet.'.tr,
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 13,
@@ -1216,7 +1217,7 @@ class _MatchRow extends StatelessWidget {
             if (match.matchNumber != null)
               _MatchMeta(
                 icon: Icons.tag_rounded,
-                text: 'Match ${match.matchNumber}',
+                text: 'Match {number}'.trArgs({'number': match.matchNumber}),
               ),
             const Spacer(),
             if (match.matchDate != null)
@@ -1234,9 +1235,9 @@ class _MatchRow extends StatelessWidget {
     int? playerId,
     int? teamId,
   }) {
-    if (playerId != null) return 'Player $playerId';
-    if (teamId != null) return 'Team $teamId';
-    return 'TBD';
+    if (playerId != null) return 'Player {id}'.trArgs({'id': playerId});
+    if (teamId != null) return 'Team {id}'.trArgs({'id': teamId});
+    return 'TBD'.tr;
   }
 }
 
@@ -1269,7 +1270,7 @@ class _ScoreBadge extends StatelessWidget {
       child: Text(
         hasScore
             ? '${match.homeScore} - ${match.awayScore}'
-            : 'VS',
+            : 'VS'.tr,
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: e7mNavy,
@@ -1364,8 +1365,8 @@ class _ParticipantsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Registered players',
+                    Text(
+                      'Registered players'.tr,
                       style: TextStyle(
                         color: e7mNavy,
                         fontSize: 14,
@@ -1375,8 +1376,8 @@ class _ParticipantsCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       max == null
-                          ? '$current participants'
-                          : '$current / $max participants',
+                          ? '{count} participants'.trArgs({'count': current})
+                          : '{current} / {max} participants'.trArgs({'current': current, 'max': max}),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,
@@ -1419,7 +1420,7 @@ class _ParticipantsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  'Waiting list is enabled',
+                  'Waiting list is enabled'.tr,
                   style: TextStyle(
                     color: Colors.grey.shade700,
                     fontSize: 12,
@@ -1479,7 +1480,7 @@ class _PaymentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isFree ? 'Free Entry' : 'Entry Fee',
+                  isFree ? 'Free Entry'.tr : 'Entry Fee'.tr,
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 12,
@@ -1489,8 +1490,8 @@ class _PaymentCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   isFree
-                      ? 'No payment required'
-                      : '${_formatMoney(competition.entryFee)} EGP',
+                      ? 'No payment required'.tr
+                      : '{amount} EGP'.trArgs({'amount': _formatMoney(competition.entryFee)}),
                   style: const TextStyle(
                     color: e7mNavy,
                     fontSize: 18,
@@ -1512,7 +1513,7 @@ class _PaymentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '${competition.paymentWindowMinutes} min',
+                '{n} min'.trArgs({'n': competition.paymentWindowMinutes}),
                 style: const TextStyle(
                   color: Colors.orange,
                   fontSize: 11,
@@ -1650,8 +1651,8 @@ class _RegistrationBottomBar extends StatelessWidget {
                         const SizedBox(width: 9),
                         Text(
                           hasPreviousPayment
-                              ? 'Retry Payment'
-                              : 'Complete Payment',
+                              ? 'Retry Payment'.tr
+                              : 'Complete Payment'.tr,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w900,
@@ -1682,8 +1683,8 @@ class _RegistrationBottomBar extends StatelessWidget {
                         competition.maxParticipants!;
 
             if (isFull && !competition.waitingListEnabled) {
-              return const _DisabledButton(
-                text: 'Competition Full',
+              return _DisabledButton(
+                text: 'Competition Full'.tr,
                 icon: Icons.block_rounded,
               );
             }
@@ -1733,8 +1734,8 @@ class _RegistrationBottomBar extends StatelessWidget {
                     const SizedBox(width: 9),
                     Text(
                       isFull
-                          ? 'Join Waiting List'
-                          : 'Register Now',
+                          ? 'Join Waiting List'.tr
+                          : 'Register Now'.tr,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
@@ -1807,8 +1808,8 @@ Future<void> _performRegistration(
         ),
         content: Text(
           registration?.status == 'waitlisted'
-              ? 'You have been added to the waiting list.'
-              : 'Registration completed successfully.',
+              ? 'You have been added to the waiting list.'.tr
+              : 'Registration completed successfully.'.tr,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
           ),
@@ -1825,7 +1826,7 @@ Future<void> _performRegistration(
         ),
         content: Text(
           provider.errorMessage ??
-              'Failed to register for competition.',
+              'Failed to register for competition.'.tr,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
           ),
@@ -2099,7 +2100,7 @@ class _DateRow extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                date == null ? 'Date not available' : _formatDateTime(date!),
+                date == null ? 'Date not available'.tr : _formatDateTime(date!),
                 style: const TextStyle(
                   color: e7mNavy,
                   fontSize: 13,
@@ -2237,48 +2238,48 @@ class _StatusConfig {
 _StatusConfig _statusConfig(String status) {
   switch (status.toLowerCase()) {
     case 'open':
-      return const _StatusConfig(
-        label: 'OPEN',
+      return _StatusConfig(
+        label: 'OPEN'.tr,
         icon: Icons.lock_open_rounded,
         foregroundColor: Color(0xFF4F8F00),
         backgroundColor: Color(0xFFEFF8E5),
       );
 
     case 'upcoming':
-      return const _StatusConfig(
-        label: 'UPCOMING',
+      return _StatusConfig(
+        label: 'UPCOMING'.tr,
         icon: Icons.schedule_rounded,
         foregroundColor: Color(0xFF082B5C),
         backgroundColor: Color(0xFFEAF0F8),
       );
 
     case 'ongoing':
-      return const _StatusConfig(
-        label: 'LIVE',
+      return _StatusConfig(
+        label: 'LIVE'.tr,
         icon: Icons.play_circle_rounded,
         foregroundColor: Color(0xFF16823A),
         backgroundColor: Color(0xFFE8F7ED),
       );
 
     case 'completed':
-      return const _StatusConfig(
-        label: 'COMPLETED',
+      return _StatusConfig(
+        label: 'COMPLETED'.tr,
         icon: Icons.check_circle_outline_rounded,
         foregroundColor: Color(0xFF607080),
         backgroundColor: Color(0xFFF0F2F4),
       );
 
     case 'cancelled':
-      return const _StatusConfig(
-        label: 'CANCELLED',
+      return _StatusConfig(
+        label: 'CANCELLED'.tr,
         icon: Icons.cancel_outlined,
         foregroundColor: Color(0xFFC62828),
         backgroundColor: Color(0xFFFFEEEE),
       );
 
     default:
-      return const _StatusConfig(
-        label: 'AVAILABLE',
+      return _StatusConfig(
+        label: 'AVAILABLE'.tr,
         icon: Icons.emoji_events_outlined,
         foregroundColor: Color(0xFF7CC000),
         backgroundColor: Color(0xFFF1F9E7),
@@ -2314,56 +2315,56 @@ _StatusConfig _statusConfig(String status) {
 _StatusConfig _registrationStatusConfig(String status) {
   switch (status.toLowerCase()) {
     case 'pending':
-      return const _StatusConfig(
-        label: 'PENDING APPROVAL',
+      return _StatusConfig(
+        label: 'PENDING APPROVAL'.tr,
         icon: Icons.hourglass_top_rounded,
         foregroundColor: Color(0xFF082B5C),
         backgroundColor: Color(0xFFEAF0F8),
       );
 
     case 'approved':
-      return const _StatusConfig(
-        label: 'APPROVED',
+      return _StatusConfig(
+        label: 'APPROVED'.tr,
         icon: Icons.check_circle_outline_rounded,
         foregroundColor: Color(0xFF16823A),
         backgroundColor: Color(0xFFE8F7ED),
       );
 
     case 'paid':
-      return const _StatusConfig(
-        label: 'REGISTERED',
+      return _StatusConfig(
+        label: 'REGISTERED'.tr,
         icon: Icons.check_circle_rounded,
         foregroundColor: Color(0xFF4F8F00),
         backgroundColor: Color(0xFFEFF8E5),
       );
 
     case 'waitlisted':
-      return const _StatusConfig(
-        label: 'ON WAITING LIST',
+      return _StatusConfig(
+        label: 'ON WAITING LIST'.tr,
         icon: Icons.hourglass_bottom_rounded,
         foregroundColor: Color(0xFFB26A00),
         backgroundColor: Color(0xFFFFF3E0),
       );
 
     case 'rejected':
-      return const _StatusConfig(
-        label: 'PAYMENT REJECTED',
+      return _StatusConfig(
+        label: 'PAYMENT REJECTED'.tr,
         icon: Icons.error_outline_rounded,
         foregroundColor: Color(0xFFC62828),
         backgroundColor: Color(0xFFFFEEEE),
       );
 
     case 'expired':
-      return const _StatusConfig(
-        label: 'REGISTRATION EXPIRED',
+      return _StatusConfig(
+        label: 'REGISTRATION EXPIRED'.tr,
         icon: Icons.timer_off_outlined,
         foregroundColor: Color(0xFF607080),
         backgroundColor: Color(0xFFF0F2F4),
       );
 
     case 'cancelled':
-      return const _StatusConfig(
-        label: 'CANCELLED',
+      return _StatusConfig(
+        label: 'CANCELLED'.tr,
         icon: Icons.cancel_outlined,
         foregroundColor: Color(0xFF607080),
         backgroundColor: Color(0xFFF0F2F4),
@@ -2393,10 +2394,10 @@ bool _hasText(String? value) {
 String _competitionType(String value) {
   switch (value.toLowerCase()) {
     case 'individual':
-      return 'Individual';
+      return 'Individual'.tr;
 
     case 'team':
-      return 'Team';
+      return 'Team'.tr;
 
     default:
       return value;
@@ -2406,10 +2407,10 @@ String _competitionType(String value) {
 String _approvalMode(String value) {
   switch (value.toLowerCase()) {
     case 'auto':
-      return 'Automatic';
+      return 'Automatic'.tr;
 
     case 'manual':
-      return 'Manual';
+      return 'Manual'.tr;
 
     default:
       return value;
@@ -2419,10 +2420,10 @@ String _approvalMode(String value) {
 String _visibility(String value) {
   switch (value.toLowerCase()) {
     case 'public':
-      return 'Public';
+      return 'Public'.tr;
 
     case 'private':
-      return 'Private';
+      return 'Private'.tr;
 
     default:
       return value;
@@ -2533,7 +2534,7 @@ class _BracketCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Bracket is not generated yet.',
+                    'Bracket is not generated yet.'.tr,
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 13,
@@ -2550,7 +2551,7 @@ class _BracketCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.account_tree_outlined,
@@ -2559,7 +2560,7 @@ class _BracketCard extends StatelessWidget {
                   ),
                   SizedBox(width: 9),
                   Text(
-                    'Bracket',
+                    'Bracket'.tr,
                     style: TextStyle(
                       color: e7mNavy,
                       fontSize: 16,
@@ -2669,10 +2670,10 @@ class _BracketMatch extends StatelessWidget {
         : null;
 
     final homeName =
-        homeData?['name']?.toString() ?? 'TBD';
+        homeData?['name']?.toString() ?? 'TBD'.tr;
 
     final awayName =
-        awayData?['name']?.toString() ?? 'TBD';
+        awayData?['name']?.toString() ?? 'TBD'.tr;
 
     final homeScore = data['home_score'];
     final awayScore = data['away_score'];
@@ -2740,7 +2741,7 @@ class _BracketMatch extends StatelessWidget {
             children: [
               if (matchNumber != null)
                 Text(
-                  'Match $matchNumber',
+                  'Match {number}'.trArgs({'number': matchNumber}),
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 11,

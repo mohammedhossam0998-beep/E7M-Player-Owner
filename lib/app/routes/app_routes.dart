@@ -33,6 +33,14 @@ import 'package:e7m/features/player/profile/presentation/screens/profile_screen.
 // ============================================================
 
 import 'package:e7m/features/owner/dashboard/owner_dashboard_screen.dart';
+import 'package:e7m/features/owner/notifications/notifications_screen.dart'
+as owner_notifications;
+import 'package:e7m/features/owner/booking/presentation/screens/owner_bookings_screen.dart';
+import 'package:e7m/features/owner/payout/presentation/screens/owner_payments_screen.dart';
+import 'package:e7m/features/owner/reviews/presentation/reviews_screen.dart';
+
+import 'package:e7m/features/owner/payout/providers/owner_payment_provider.dart';
+import 'package:e7m/features/owner/reviews/presentation/providers/owner_review_provider.dart';
 
 // ============================================================
 // ROUTE NAMES
@@ -103,6 +111,10 @@ class AppRouter {
           const RegisterScreen(),
         );
 
+    // ========================================================
+    // PLAYER
+    // ========================================================
+
     // --------------------------------------------------------
     // PLAYER HOME
     // --------------------------------------------------------
@@ -130,7 +142,9 @@ class AppRouter {
 
         final bookingId = arguments is int
             ? arguments
-            : int.tryParse(arguments?.toString() ?? '');
+            : int.tryParse(
+          arguments?.toString() ?? '',
+        );
 
         if (bookingId == null) {
           return _page(
@@ -169,6 +183,10 @@ class AppRouter {
           const ProfileScreen(),
         );
 
+    // ========================================================
+    // OWNER
+    // ========================================================
+
     // --------------------------------------------------------
     // OWNER DASHBOARD
     // --------------------------------------------------------
@@ -179,8 +197,50 @@ class AppRouter {
         );
 
     // --------------------------------------------------------
-    // UNKNOWN ROUTE
+    // OWNER NOTIFICATIONS
     // --------------------------------------------------------
+
+      case RouteNames.ownerNotifications:
+        return _page(
+          const owner_notifications.NotificationsScreen(),
+        );
+
+    // ============================================================
+    // OWNER BOOKINGS
+    // ============================================================
+
+      case RouteNames.ownerBookings:
+        return _page(
+          const OwnerBookingsScreen(),
+        );
+
+    // ============================================================
+    // OWNER PAYMENTS
+    // ============================================================
+
+      case RouteNames.ownerPayments:
+        return _page(
+          ChangeNotifierProvider<OwnerPaymentProvider>(
+            create: (_) => OwnerPaymentProvider(),
+            child: const OwnerPaymentsScreen(),
+          ),
+        );
+
+    // ============================================================
+    // OWNER REVIEWS
+    // ============================================================
+
+      case RouteNames.ownerReviews:
+        return _page(
+          ChangeNotifierProvider<OwnerReviewProvider>(
+            create: (_) => OwnerReviewProvider(),
+            child: const ReviewsScreen(),
+          ),
+        );
+
+    // ========================================================
+    // UNKNOWN ROUTE
+    // ========================================================
 
       default:
         return MaterialPageRoute(
@@ -204,7 +264,9 @@ class AppRouter {
   // PAGE BUILDER
   // ==========================================================
 
-  static MaterialPageRoute _page(Widget page) {
+  static MaterialPageRoute<dynamic> _page(
+      Widget page,
+      ) {
     return MaterialPageRoute(
       builder: (_) => page,
     );
@@ -229,7 +291,6 @@ class _BookingDetailsLoader extends StatefulWidget {
 
 class _BookingDetailsLoaderState
     extends State<_BookingDetailsLoader> {
-
   @override
   void initState() {
     super.initState();
@@ -243,7 +304,9 @@ class _BookingDetailsLoaderState
     final provider = context.read<BookingProvider>();
 
     final booking =
-    await provider.fetchBookingDetails(widget.bookingId);
+    await provider.fetchBookingDetails(
+      widget.bookingId,
+    );
 
     if (!mounted) return;
 
@@ -258,6 +321,7 @@ class _BookingDetailsLoaderState
       );
 
       Navigator.of(context).pop();
+
       return;
     }
 

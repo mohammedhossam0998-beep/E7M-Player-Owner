@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,12 +10,12 @@ import 'package:e7m/core/network/api_client.dart';
 import 'package:e7m/features/player/home/map_screen.dart';
 import 'package:e7m/features/player/booking/my_bookings_screen.dart';
 import 'package:e7m/features/player/teams/presentation/screens/teams_near_you_screen.dart';
+import 'package:e7m/features/player/teams/presentation/screens/create_team_screen.dart';
 import 'package:e7m/features/player/stadium/presentation/screens/stadiums_screen.dart';
 import 'package:e7m/features/player/stadium/presentation/screens/favorites_screen.dart';
 import 'package:e7m/features/player/notifications/presentation/screens/notifications_screen.dart';
 import 'package:e7m/features/player/notifications/providers/notification_provider.dart';
 
-import 'package:e7m/features/ai/presentation/screens/ai_chat_screen.dart';
 
 import 'package:e7m/features/player/profile/presentation/screens/profile_screen.dart';
 import 'package:e7m/features/player/stadium/presentation/widgets/favorites_service.dart';
@@ -43,7 +42,6 @@ class _AppColors {
   static const orange = Color(0xffF39C12);
   static const teal = Color(0xff00695C);
   static const tealLight = Color(0xff26A69A);
-  static const aiCardStart = Color(0xff0F172A);
 }
 
 class HomeScreen extends StatefulWidget {
@@ -108,32 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return '';
-  }
-
-  String _getProfileImageUrl() {
-    final profile = context.read<PlayerProfileProvider>().profile;
-    final image = profile?.profileImage;
-
-    if (image == null || image.trim().isEmpty) {
-      return '';
-    }
-
-    final imagePath = image.trim();
-
-// الصورة بالفعل URL كامل
-    if (imagePath.startsWith('http://') ||
-        imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-
-// الصورة مسار نسبي من السيرفر
-    final serverUrl = ApiClient.baseUrl.replaceFirst('/api', '');
-
-    if (imagePath.startsWith('/')) {
-      return '$serverUrl$imagePath';
-    }
-
-    return '$serverUrl/$imagePath';
   }
 
   Future<void> _loadFavoriteIds() async {
@@ -281,6 +253,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final t = languageProvider.translate;
 
+    // Uses the translation when the key exists, otherwise the fallback.
+    String tr(String key, String fallback) {
+      final value = t(key);
+
+      return value == key ? fallback : value;
+    }
+
     final stadiumProvider =
     context.watch<StadiumProvider>();
 
@@ -336,7 +315,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         buttonColor: _AppColors.forestGreen,
         onTap: () {
-
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CreateTeamScreen(),
+            ),
+          );
         },
       ),
 
@@ -378,9 +362,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       _CardData(
-        title: 'Competitions',
-        subtitle: 'Join football competitions',
-        buttonLabel: 'Explore',
+        title: t('competitions'),
+        subtitle: tr(
+          'join_football_competitions',
+          'Join football competitions',
+        ),
+        buttonLabel: t('explore'),
         colors: const [
           _AppColors.darkNavy,
           _AppColors.primaryGreen,
@@ -413,30 +400,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Consumer<PlayerProfileProvider>(
                     builder: (context, profileProvider, _) {
-                      final image = profileProvider.profile?.profileImage;
+                      final imageUrl = ApiClient.resolveMediaUrl(
+                        profileProvider.profile?.profileImage,
+                      );
 
-                      if (image == null || image.trim().isEmpty) {
-                        return const CircleAvatar(
-                          radius: 26,
-                          backgroundImage: AssetImage(
-                            'assets/images/player.png',
-                          ),
-                        );
-                      }
-
-                      final imagePath = image.trim();
-
-                      final imageUrl =
-                      imagePath.startsWith('http://') ||
-                          imagePath.startsWith('https://')
-                          ? imagePath
-                          : imagePath.startsWith('/')
-                          ? '${ApiClient.baseUrl.replaceFirst('/api', '')}$imagePath'
-                          : '${ApiClient.baseUrl.replaceFirst('/api', '')}/$imagePath';
-
+                      // The default avatar stays visible if the network
+                      // image is missing or fails to load.
                       return CircleAvatar(
                         radius: 26,
-                        backgroundImage: NetworkImage(imageUrl),
+                        backgroundImage: const AssetImage(
+                          'assets/images/player.png',
+                        ),
+                        foregroundImage: imageUrl.isNotEmpty
+                            ? NetworkImage(imageUrl)
+                            : null,
+                        onForegroundImageError: imageUrl.isNotEmpty
+                            ? (error, stackTrace) {}
+                            : null,
                       );
                     },
                   ),
@@ -458,12 +438,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                 FontWeight.w500,
                               ),
                             ),
-                            Text(
-                              _getUserName(),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                            Flexible(
+                              child: Consumer<PlayerProfileProvider>(
+                                builder: (context, profileProvider, _) {
+                                  // Profile name is updated right after
+                                  // Edit Profile; the login name is the
+                                  // fallback.
+                                  final profileName =
+                                  profileProvider.profile?.fullName?.trim();
+
+                                  final name = (profileName != null &&
+                                      profileName.isNotEmpty)
+                                      ? profileName
+                                      : _getUserName();
+
+                                  return Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
@@ -601,270 +600,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
                 children: [
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const StadiumsScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              constraints:
-                              const BoxConstraints(
-                                minHeight: 90,
-                              ),
-                              padding:
-                              const EdgeInsets
-                                  .symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration:
-                              BoxDecoration(
-                                borderRadius:
-                                BorderRadius
-                                    .circular(
-                                  24,
-                                ),
-                                gradient:
-                                const LinearGradient(
-                                  colors: [
-                                    _AppColors
-                                        .darkNavy,
-                                    _AppColors
-                                        .violet,
-                                  ],
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor:
-                                    Colors.white24,
-                                    child: Icon(
-                                      Icons
-                                          .sports_soccer,
-                                      color:
-                                      Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .center,
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
-                                      children: [
-                                        Text(
-                                          t('find_team'),
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors.white,
-                                            fontWeight:
-                                            FontWeight
-                                                .bold,
-                                            fontSize: 15,
-                                          ),
-                                          maxLines: 1,
-                                          overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                        ),
-                                        const SizedBox(
-                                          height: 2,
-                                        ),
-                                        Text(
-                                          t('join_matches'),
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors.white70,
-                                            fontSize: 11,
-                                          ),
-                                          maxLines: 2,
-                                          overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const Icon(
-                                    Icons
-                                        .arrow_forward_ios,
-                                    color:
-                                    Colors.white,
-                                    size: 14,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const AIChatScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              constraints:
-                              const BoxConstraints(
-                                minHeight: 90,
-                              ),
-                              padding:
-                              const EdgeInsets
-                                  .symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration:
-                              BoxDecoration(
-                                borderRadius:
-                                BorderRadius
-                                    .circular(
-                                  24,
-                                ),
-                                gradient:
-                                const LinearGradient(
-                                  colors: [
-                                    _AppColors
-                                        .aiCardStart,
-                                    _AppColors
-                                        .forestGreen,
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _AppColors
-                                        .forestGreen
-                                        .withValues(
-                                      alpha: 0.2,
-                                    ),
-                                    blurRadius: 10,
-                                    offset:
-                                    const Offset(
-                                      0,
-                                      4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor:
-                                    Colors.white24,
-                                    child: Icon(
-                                      Icons.smart_toy,
-                                      color:
-                                      Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .center,
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
-                                      children: [
-                                        Text(
-                                          t(
-                                            'ai_assistant',
-                                          ),
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors.white,
-                                            fontWeight:
-                                            FontWeight
-                                                .bold,
-                                            fontSize: 15,
-                                          ),
-                                          maxLines: 1,
-                                          overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                        ),
-                                        const SizedBox(
-                                          height: 2,
-                                        ),
-                                        Text(
-                                          t('ai_help'),
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors.white70,
-                                            fontSize: 11,
-                                          ),
-                                          maxLines: 2,
-                                          overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    width: 4,
-                                  ),
-
-                                  const Icon(
-                                    Icons
-                                        .arrow_forward_ios,
-                                    color:
-                                    Colors.white,
-                                    size: 14,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
                   SizedBox(
                     height: 100,
                     child: PageView.builder(
@@ -891,9 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
 
-                  const SizedBox(height: 18),
-
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
 
                   Row(
                     mainAxisAlignment:
@@ -1019,9 +752,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 12),
 
-                    const Text(
-                      'Unable to load stadiums',
-                      style: TextStyle(
+                    Text(
+                      tr(
+                        'unable_to_load_stadiums',
+                        'Unable to load stadiums',
+                      ),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1033,7 +769,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed:
                       stadiumProvider.loadStadiums,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Try Again'),
+                      label: Text(t('try_again')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                         _AppColors.primaryGreen,

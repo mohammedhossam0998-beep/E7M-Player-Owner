@@ -20,12 +20,30 @@ class PaymentProvider extends ChangeNotifier {
   PaymentModel? get payment => _payment;
 
   // ============================================================
-  // PAYMENT ACCOUNT
+  // PAYMENT ACCOUNT OF CURRENT PAYMENT
   // ============================================================
 
   PaymentAccountModel? _paymentAccount;
 
   PaymentAccountModel? get paymentAccount => _paymentAccount;
+
+  // ============================================================
+  // AVAILABLE OWNER PAYMENT ACCOUNTS
+  // ============================================================
+
+  List<PaymentAccountModel> _paymentAccounts = [];
+
+  List<PaymentAccountModel> get paymentAccounts =>
+      List.unmodifiable(_paymentAccounts);
+
+  // ============================================================
+  // SELECTED PAYMENT ACCOUNT
+  // ============================================================
+
+  PaymentAccountModel? _selectedPaymentAccount;
+
+  PaymentAccountModel? get selectedPaymentAccount =>
+      _selectedPaymentAccount;
 
   // ============================================================
   // BOOKING PAYMENTS
@@ -52,6 +70,11 @@ class PaymentProvider extends ChangeNotifier {
 
   bool get isLoadingPayments => _isLoadingPayments;
 
+  bool _isLoadingPaymentAccounts = false;
+
+  bool get isLoadingPaymentAccounts =>
+      _isLoadingPaymentAccounts;
+
   // ============================================================
   // ERROR
   // ============================================================
@@ -66,14 +89,23 @@ class PaymentProvider extends ChangeNotifier {
 
   bool get hasPayment => _payment != null;
 
-  bool get isPending => _payment?.isPending ?? false;
+  bool get isPending =>
+      _payment?.isPending ?? false;
 
-  bool get isPaid => _payment?.isPaid ?? false;
+  bool get isPaid =>
+      _payment?.isPaid ?? false;
 
-  bool get isFailed => _payment?.isFailed ?? false;
+  bool get isFailed =>
+      _payment?.isFailed ?? false;
 
   bool get hasPaymentAccount =>
       _paymentAccount != null;
+
+  bool get hasAvailablePaymentAccounts =>
+      _paymentAccounts.isNotEmpty;
+
+  bool get hasSelectedPaymentAccount =>
+      _selectedPaymentAccount != null;
 
   // ============================================================
   // CLEAR ERROR
@@ -85,12 +117,74 @@ class PaymentProvider extends ChangeNotifier {
   }
 
   // ============================================================
+  // LOAD AVAILABLE PAYMENT ACCOUNTS
+  // ============================================================
+
+  Future<bool> loadPaymentAccounts({
+    required int bookingId,
+  }) async {
+    _isLoadingPaymentAccounts = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
+    try {
+      final accounts =
+      await _repository.getBookingPaymentAccounts(
+        bookingId: bookingId,
+      );
+
+      _paymentAccounts = accounts;
+
+      // Reset old selection.
+      _selectedPaymentAccount = null;
+
+      // If there is only one available account,
+      // select it automatically.
+      if (_paymentAccounts.length == 1) {
+        _selectedPaymentAccount =
+            _paymentAccounts.first;
+      }
+
+      return true;
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      return false;
+    } finally {
+      _isLoadingPaymentAccounts = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================================
+  // SELECT PAYMENT ACCOUNT
+  // ============================================================
+
+  void selectPaymentAccount(
+      PaymentAccountModel account,
+      ) {
+    _selectedPaymentAccount = account;
+
+    notifyListeners();
+  }
+
+  // ============================================================
+  // CLEAR SELECTED PAYMENT ACCOUNT
+  // ============================================================
+
+  void clearSelectedPaymentAccount() {
+    _selectedPaymentAccount = null;
+
+    notifyListeners();
+  }
+
+  // ============================================================
   // CREATE DEPOSIT PAYMENT
   // ============================================================
 
   Future<bool> createDepositPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     _isCreatingPayment = true;
     _errorMessage = null;
@@ -98,20 +192,24 @@ class PaymentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.createDepositPayment(
+      final result =
+      await _repository.createDepositPayment(
         bookingId: bookingId,
-        paymentMethod: paymentMethod,
+        ownerPaymentAccountId:
+        ownerPaymentAccountId,
       );
 
       _payment = result.payment;
-      _paymentAccount = result.paymentAccount;
 
-      // Keep the newly created payment
-      // inside the booking payments list.
+      _paymentAccount =
+          result.paymentAccount;
+
+      // Keep newly created payment in list.
       _bookingPayments = [
         result.payment,
         ..._bookingPayments.where(
-              (payment) => payment.id != result.payment.id,
+              (payment) =>
+          payment.id != result.payment.id,
         ),
       ];
 
@@ -131,7 +229,7 @@ class PaymentProvider extends ChangeNotifier {
 
   Future<bool> createFullPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     _isCreatingPayment = true;
     _errorMessage = null;
@@ -139,20 +237,24 @@ class PaymentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.createFullPayment(
+      final result =
+      await _repository.createFullPayment(
         bookingId: bookingId,
-        paymentMethod: paymentMethod,
+        ownerPaymentAccountId:
+        ownerPaymentAccountId,
       );
 
       _payment = result.payment;
-      _paymentAccount = result.paymentAccount;
 
-      // Keep the newly created payment
-      // inside the booking payments list.
+      _paymentAccount =
+          result.paymentAccount;
+
+      // Keep newly created payment in list.
       _bookingPayments = [
         result.payment,
         ..._bookingPayments.where(
-              (payment) => payment.id != result.payment.id,
+              (payment) =>
+          payment.id != result.payment.id,
         ),
       ];
 
@@ -183,13 +285,15 @@ class PaymentProvider extends ChangeNotifier {
       final payment =
       await _repository.submitTransactionReference(
         paymentId: paymentId,
-        transactionReference: transactionReference.trim(),
+        transactionReference:
+        transactionReference.trim(),
       );
 
       _payment = payment;
 
-      // Update the payment inside the list.
-      final index = _bookingPayments.indexWhere(
+      // Update payment in list.
+      final index =
+      _bookingPayments.indexWhere(
             (item) => item.id == payment.id,
       );
 
@@ -217,8 +321,7 @@ class PaymentProvider extends ChangeNotifier {
     _isLoadingPayments = true;
     _errorMessage = null;
 
-    // IMPORTANT:
-    // Clear previous booking payment data first.
+    // Clear previous booking data.
     _payment = null;
     _paymentAccount = null;
     _bookingPayments = [];
@@ -240,20 +343,37 @@ class PaymentProvider extends ChangeNotifier {
 
         _payment = currentPayment;
 
-        // ======================================================
-        // LOAD OWNER PAYMENT ACCOUNT
-        // ======================================================
+        // --------------------------------------------------------
+        // Restore the payment account attached to this payment.
+        // --------------------------------------------------------
 
         if (currentPayment.hasPaymentAccount) {
-          _paymentAccount = PaymentAccountModel(
-            paymentMethod:
-            currentPayment.paymentAccountMethod ??
-                currentPayment.paymentMethod,
-            accountName:
-            currentPayment.paymentAccountName ?? '',
-            accountIdentifier:
-            currentPayment.paymentAccountIdentifier ?? '',
-          );
+          _paymentAccount =
+              PaymentAccountModel(
+                id:
+                currentPayment
+                    .ownerPaymentAccountId ??
+                    0,
+
+                paymentMethod:
+                currentPayment
+                    .paymentAccountMethod ??
+                    currentPayment.paymentMethod,
+
+                walletProvider:
+                currentPayment
+                    .paymentAccountWalletProvider,
+
+                accountName:
+                currentPayment
+                    .paymentAccountName ??
+                    '',
+
+                accountIdentifier:
+                currentPayment
+                    .paymentAccountIdentifier ??
+                    '',
+              );
         }
       }
 
@@ -271,21 +391,35 @@ class PaymentProvider extends ChangeNotifier {
   // SET PAYMENT
   // ============================================================
 
-  void setPayment(PaymentModel? payment) {
+  void setPayment(
+      PaymentModel? payment,
+      ) {
     _payment = payment;
 
     if (payment == null) {
       _paymentAccount = null;
     } else if (payment.hasPaymentAccount) {
-      _paymentAccount = PaymentAccountModel(
-        paymentMethod:
-        payment.paymentAccountMethod ??
-            payment.paymentMethod,
-        accountName:
-        payment.paymentAccountName ?? '',
-        accountIdentifier:
-        payment.paymentAccountIdentifier ?? '',
-      );
+      _paymentAccount =
+          PaymentAccountModel(
+            id:
+            payment.ownerPaymentAccountId ??
+                0,
+
+            paymentMethod:
+            payment.paymentAccountMethod ??
+                payment.paymentMethod,
+
+            walletProvider:
+            payment.paymentAccountWalletProvider,
+
+            accountName:
+            payment.paymentAccountName ??
+                '',
+
+            accountIdentifier:
+            payment.paymentAccountIdentifier ??
+                '',
+          );
     }
 
     notifyListeners();
@@ -308,8 +442,14 @@ class PaymentProvider extends ChangeNotifier {
 
   void clearBookingPayments() {
     _bookingPayments = [];
+
     _payment = null;
+
     _paymentAccount = null;
+
+    _paymentAccounts = [];
+
+    _selectedPaymentAccount = null;
 
     notifyListeners();
   }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../data/models/owner_payment_model.dart';
 import '../providers/owner_payment_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
+import 'payment_accounts_screen.dart';
 
 class PayoutScreen extends StatefulWidget {
   const PayoutScreen({super.key});
@@ -27,14 +29,34 @@ class _PayoutScreenState extends State<PayoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Owner Payments'),
+        title: Text('Owner Payments'.tr),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: 'Payment Accounts'.tr,
             onPressed: () {
-              context.read<OwnerPaymentProvider>().refreshPayments();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const PaymentAccountsScreen(),
+                ),
+              );
             },
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(
+              Icons.account_balance_wallet_outlined,
+            ),
+          ),
+
+          IconButton(
+            tooltip: 'Refresh'.tr,
+            onPressed: () {
+              context
+                  .read<OwnerPaymentProvider>()
+                  .refreshPayments();
+            },
+            icon: const Icon(
+              Icons.refresh,
+            ),
           ),
         ],
       ),
@@ -68,7 +90,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
                 if (provider.pendingPayments.isNotEmpty) ...[
                   _buildSectionTitle(
-                    'Pending Payments',
+                    'Pending Payments'.tr,
                     provider.pendingCount,
                   ),
                   const SizedBox(height: 12),
@@ -86,7 +108,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
                 if (provider.paidPayments.isNotEmpty) ...[
                   _buildSectionTitle(
-                    'Paid Payments',
+                    'Paid Payments'.tr,
                     provider.paidCount,
                   ),
                   const SizedBox(height: 12),
@@ -104,7 +126,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
                 if (provider.failedPayments.isNotEmpty) ...[
                   _buildSectionTitle(
-                    'Rejected Payments',
+                    'Rejected Payments'.tr,
                     provider.failedCount,
                   ),
                   const SizedBox(height: 12),
@@ -134,7 +156,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
       children: [
         Expanded(
           child: _buildSummaryCard(
-            title: 'Pending',
+            title: 'Pending'.tr,
             value: provider.pendingCount.toString(),
             icon: Icons.hourglass_top,
           ),
@@ -142,7 +164,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: _buildSummaryCard(
-            title: 'Paid',
+            title: 'Paid'.tr,
             value: provider.paidCount.toString(),
             icon: Icons.check_circle_outline,
           ),
@@ -150,7 +172,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: _buildSummaryCard(
-            title: 'Rejected',
+            title: 'Rejected'.tr,
             value: provider.failedCount.toString(),
             icon: Icons.cancel_outlined,
           ),
@@ -294,7 +316,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
                       Text(
                         payment.playerName.isNotEmpty
                             ? payment.playerName
-                            : 'Unknown Player',
+                            : 'Unknown Player'.tr,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -327,25 +349,25 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
             _buildInfoRow(
               Icons.sports_soccer,
-              'Pitch',
+              'Pitch'.tr,
               payment.pitchName,
             ),
 
             _buildInfoRow(
               Icons.calendar_today,
-              'Date',
+              'Date'.tr,
               _formatDate(payment.slotDate),
             ),
 
             _buildInfoRow(
               Icons.access_time,
-              'Time',
+              'Time'.tr,
               '${payment.startTime} - ${payment.endTime}',
             ),
 
             _buildInfoRow(
               Icons.receipt_long,
-              'Booking',
+              'Booking'.tr,
               '#${payment.bookingId}',
             ),
 
@@ -356,23 +378,23 @@ class _PayoutScreenState extends State<PayoutScreen> {
             // ----------------------------------------------------
 
             _buildMoneyRow(
-              'Total Price',
+              'Total Price'.tr,
               payment.totalPrice,
             ),
 
             _buildMoneyRow(
-              'Deposit',
+              'Deposit'.tr,
               payment.depositAmount,
             ),
 
             _buildMoneyRow(
-              'Remaining',
+              'Remaining'.tr,
               payment.remainingAmount,
             ),
 
             _buildInfoRow(
               Icons.payment,
-              'Method',
+              'Method'.tr,
               _paymentMethodName(
                 payment.paymentMethod,
               ),
@@ -380,8 +402,8 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
             _buildInfoRow(
               Icons.category,
-              'Type',
-              payment.paymentType,
+              'Type'.tr,
+              _paymentTypeLabel(payment.paymentType),
             ),
 
             if (payment.transactionReference !=
@@ -391,7 +413,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
                     .isNotEmpty)
               _buildInfoRow(
                 Icons.tag,
-                'Transaction',
+                'Transaction'.tr,
                 payment.transactionReference!,
               ),
 
@@ -416,8 +438,8 @@ class _PayoutScreenState extends State<PayoutScreen> {
                       icon: const Icon(
                         Icons.close,
                       ),
-                      label: const Text(
-                        'Reject',
+                      label: Text(
+                        'Reject'.tr,
                       ),
                     ),
                   ),
@@ -445,8 +467,8 @@ class _PayoutScreenState extends State<PayoutScreen> {
                       ),
                       label: Text(
                         isProcessing
-                            ? 'Processing...'
-                            : 'Approve',
+                            ? 'Processing...'.tr
+                            : 'Approve'.tr,
                       ),
                     ),
                   ),
@@ -519,7 +541,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
             ),
           ),
           Text(
-            '${amount.toStringAsFixed(2)} EGP',
+            '{amount} EGP'.trArgs({'amount': amount.toStringAsFixed(2)}),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
@@ -539,17 +561,17 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
     switch (status) {
       case 'pending':
-        text = 'Pending';
+        text = 'Pending'.tr;
         icon = Icons.hourglass_top;
         break;
 
       case 'paid':
-        text = 'Paid';
+        text = 'Paid'.tr;
         icon = Icons.check_circle;
         break;
 
       case 'failed':
-        text = 'Rejected';
+        text = 'Rejected'.tr;
         icon = Icons.cancel;
         break;
 
@@ -601,10 +623,10 @@ class _PayoutScreenState extends State<PayoutScreen> {
     final confirmed =
     await _showConfirmationDialog(
       context,
-      title: 'Approve Payment',
+      title: 'Approve Payment'.tr,
       message:
-      'Are you sure you want to approve payment #${payment.id}?',
-      confirmText: 'Approve',
+      'Are you sure you want to approve payment #{id}?'.trArgs({'id': payment.id}),
+      confirmText: 'Approve'.tr,
     );
 
     if (!confirmed || !mounted) {
@@ -618,16 +640,16 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Payment approved successfully',
+            'Payment approved successfully'.tr,
           ),
         ),
       );
     } else {
       _showError(
         provider.errorMessage ??
-            'Failed to approve payment',
+            'Failed to approve payment'.tr,
       );
     }
   }
@@ -644,10 +666,10 @@ class _PayoutScreenState extends State<PayoutScreen> {
     final confirmed =
     await _showConfirmationDialog(
       context,
-      title: 'Reject Payment',
+      title: 'Reject Payment'.tr,
       message:
-      'Are you sure you want to reject payment #${payment.id}?',
-      confirmText: 'Reject',
+      'Are you sure you want to reject payment #{id}?'.trArgs({'id': payment.id}),
+      confirmText: 'Reject'.tr,
     );
 
     if (!confirmed || !mounted) {
@@ -661,16 +683,16 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Payment rejected successfully',
+            'Payment rejected successfully'.tr,
           ),
         ),
       );
     } else {
       _showError(
         provider.errorMessage ??
-            'Failed to reject payment',
+            'Failed to reject payment'.tr,
       );
     }
   }
@@ -697,7 +719,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
                 Navigator.of(dialogContext)
                     .pop(false);
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () {
@@ -754,7 +776,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
             ElevatedButton.icon(
               onPressed: provider.loadPayments,
               icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+              label: Text('Try Again'.tr),
             ),
           ],
         ),
@@ -773,14 +795,14 @@ class _PayoutScreenState extends State<PayoutScreen> {
         child: Column(
           mainAxisAlignment:
           MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(
               Icons.payments_outlined,
               size: 70,
             ),
             SizedBox(height: 16),
             Text(
-              'No payments found',
+              'No payments found'.tr,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -788,7 +810,7 @@ class _PayoutScreenState extends State<PayoutScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'There are no owner payments to display.',
+              'There are no owner payments to display.'.tr,
               textAlign: TextAlign.center,
             ),
           ],
@@ -804,22 +826,22 @@ class _PayoutScreenState extends State<PayoutScreen> {
   String _paymentMethodName(String method) {
     switch (method) {
       case 'instapay':
-        return 'InstaPay';
+        return 'InstaPay'.tr;
 
       case 'vodafone_cash':
-        return 'Vodafone Cash';
+        return 'Vodafone Cash'.tr;
 
       case 'orange_cash':
-        return 'Orange Cash';
+        return 'Orange Cash'.tr;
 
       case 'etisalat_cash':
-        return 'Etisalat Cash';
+        return 'Etisalat Cash'.tr;
 
       case 'cash':
-        return 'Cash';
+        return 'Cash'.tr;
 
       default:
-        return method.isEmpty ? 'Not specified' : method;
+        return method.isEmpty ? 'Not specified'.tr : method;
     }
   }
 
@@ -829,5 +851,17 @@ class _PayoutScreenState extends State<PayoutScreen> {
     return '${localDate.day.toString().padLeft(2, '0')}/'
         '${localDate.month.toString().padLeft(2, '0')}/'
         '${localDate.year}';
+  }
+}
+
+// Translates the raw payment type coming from the API.
+String _paymentTypeLabel(String type) {
+  switch (type) {
+    case 'deposit':
+      return 'Deposit'.tr;
+    case 'full_payment':
+      return 'Full Payment'.tr;
+    default:
+      return type;
   }
 }

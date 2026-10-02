@@ -154,7 +154,7 @@ import 'package:e7m/features/player/payments/providers/payment_provider.dart';
 
 import 'package:e7m/features/player/notifications/providers/notification_provider.dart'
 as player_notification;
-import 'package:e7m/features/player/notifications/services/fcm_service.dart';
+import 'package:e7m/core/notifications/fcm_service.dart';
 import 'package:e7m/features/player/notifications/providers/notification_settings_provider.dart';
 
 // ============================================================

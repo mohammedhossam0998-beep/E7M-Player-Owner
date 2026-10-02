@@ -16,12 +16,13 @@ class PaymentRepository {
 
   Future<PaymentResult> createDepositPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     final response =
     await _paymentService.createDepositPayment(
       bookingId: bookingId,
-      paymentMethod: paymentMethod,
+      ownerPaymentAccountId:
+      ownerPaymentAccountId,
     );
 
     return _parsePaymentResult(response);
@@ -33,12 +34,13 @@ class PaymentRepository {
 
   Future<PaymentResult> createFullPayment({
     required int bookingId,
-    required String paymentMethod,
+    required int ownerPaymentAccountId,
   }) async {
     final response =
     await _paymentService.createFullPayment(
       bookingId: bookingId,
-      paymentMethod: paymentMethod,
+      ownerPaymentAccountId:
+      ownerPaymentAccountId,
     );
 
     return _parsePaymentResult(response);
@@ -55,7 +57,8 @@ class PaymentRepository {
     final response =
     await _paymentService.submitTransactionReference(
       paymentId: paymentId,
-      transactionReference: transactionReference,
+      transactionReference:
+      transactionReference,
     );
 
     if (response is! Map<String, dynamic>) {
@@ -84,18 +87,23 @@ class PaymentRepository {
   Future<List<PaymentModel>> getBookingPayments({
     required int bookingId,
   }) async {
-    final response = await _paymentService.getBookingPayments(
+    final response =
+    await _paymentService.getBookingPayments(
       bookingId: bookingId,
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid booking payments response');
+      throw Exception(
+        'Invalid booking payments response',
+      );
     }
 
     final payments = response['payments'];
 
     if (payments is! List) {
-      throw Exception('Invalid payments data');
+      throw Exception(
+        'Invalid payments data',
+      );
     }
 
     return payments
@@ -103,6 +111,43 @@ class PaymentRepository {
         .map(
           (payment) => PaymentModel.fromJson(
         Map<String, dynamic>.from(payment),
+      ),
+    )
+        .toList();
+  }
+
+  // ============================================================
+  // GET AVAILABLE PAYMENT ACCOUNTS
+  // ============================================================
+
+  Future<List<PaymentAccountModel>>
+  getBookingPaymentAccounts({
+    required int bookingId,
+  }) async {
+    final response =
+    await _paymentService.getBookingPaymentAccounts(
+      bookingId: bookingId,
+    );
+
+    if (response is! Map<String, dynamic>) {
+      throw Exception(
+        'Invalid payment accounts response',
+      );
+    }
+
+    final accounts = response['accounts'];
+
+    if (accounts is! List) {
+      throw Exception(
+        'Invalid payment accounts data',
+      );
+    }
+
+    return accounts
+        .whereType<Map>()
+        .map(
+          (account) => PaymentAccountModel.fromJson(
+        Map<String, dynamic>.from(account),
       ),
     )
         .toList();
@@ -121,6 +166,10 @@ class PaymentRepository {
       );
     }
 
+    // ----------------------------------------------------------
+    // PAYMENT
+    // ----------------------------------------------------------
+
     final payment = response['payment'];
 
     if (payment is! Map) {
@@ -128,6 +177,10 @@ class PaymentRepository {
         'Invalid payment data',
       );
     }
+
+    // ----------------------------------------------------------
+    // PAYMENT ACCOUNT
+    // ----------------------------------------------------------
 
     final paymentAccount =
     response['payment_account'];
@@ -141,6 +194,10 @@ class PaymentRepository {
         ),
       );
     }
+
+    // ----------------------------------------------------------
+    // RESULT
+    // ----------------------------------------------------------
 
     return PaymentResult(
       payment: PaymentModel.fromJson(

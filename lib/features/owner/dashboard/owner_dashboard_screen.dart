@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -20,9 +19,11 @@ import 'package:e7m/features/owner/academy/screens/academy_dashboard_screen.dart
 import 'package:e7m/features/owner/stadium/presentation/screens/owner_stadiums_screen.dart';
 import 'package:e7m/features/owner/stadium/presentation/screens/create_stadium_screen.dart';
 
-import 'package:e7m/features/owner/payout/presentation/%20screens/owner_payments_screen.dart';
+import 'package:e7m/features/owner/payout/presentation/screens/owner_payments_screen.dart';
+import 'package:e7m/features/owner/payout/presentation/payment_accounts_screen.dart';
 import 'package:e7m/features/owner/competitions/presentation/screens/competitions_screen.dart';
 import 'package:e7m/features/owner/competitions/presentation/screens/competition_payments_screen.dart';
+
 class OwnerDashboardScreen extends StatefulWidget {
   const OwnerDashboardScreen({super.key});
 
@@ -307,8 +308,9 @@ class _OwnerDashboardScreenState
               CrossAxisAlignment.start,
 
               children: [
+                // 'hello_owner' already contains the 👋 emoji.
                 Text(
-                  "${languageProvider.translate('hello_owner')} 👋",
+                  languageProvider.translate('hello_owner'),
 
                   style: TextStyle(
                     color: Colors.grey.shade600,
@@ -587,7 +589,7 @@ class _OwnerDashboardScreenState
                   'revenue',
                 ),
 
-                '${_formatMoney(dashboard.totalRevenue)} EGP',
+                '${_formatMoney(dashboard.totalRevenue)} ${languageProvider.translate('egp')}',
 
                 languageProvider.translate(
                   'this_month',
@@ -662,6 +664,8 @@ class _OwnerDashboardScreenState
     final maxY = _getMaxRevenue(
       spots,
     );
+
+    final egp = languageProvider.translate('egp');
 
     return Column(
       crossAxisAlignment:
@@ -833,7 +837,9 @@ class _OwnerDashboardScreenState
                     getTitlesWidget:
                         (value, meta) {
                       final days =
-                      _getLastSevenDays();
+                      _getLastSevenDays(
+                        languageProvider,
+                      );
 
                       final index =
                       value.toInt();
@@ -886,7 +892,7 @@ class _OwnerDashboardScreenState
                         .map(
                           (spot) {
                         return LineTooltipItem(
-                          '${_formatMoney(spot.y)} EGP',
+                          '${_formatMoney(spot.y)} $egp',
 
                           const TextStyle(
                             color: Colors.white,
@@ -1075,6 +1081,7 @@ class _OwnerDashboardScreenState
                 i++) ...[
                   _bookingTile(
                     bookings[i],
+                    languageProvider,
                   ),
 
                   if (i !=
@@ -1100,10 +1107,11 @@ class _OwnerDashboardScreenState
 
   Widget _bookingTile(
       Map<String, dynamic> booking,
+      LanguageProvider languageProvider,
       ) {
     final playerName =
         booking['player_name']?.toString() ??
-            'Player';
+            languageProvider.translate('player');
 
     final pitchName =
         booking['pitch_name']?.toString() ??
@@ -1204,7 +1212,7 @@ class _OwnerDashboardScreenState
 
             children: [
               Text(
-                '${_formatMoney(price)} EGP',
+                '${_formatMoney(price)} ${languageProvider.translate('egp')}',
 
                 style: const TextStyle(
                   fontSize: 12,
@@ -1235,6 +1243,7 @@ class _OwnerDashboardScreenState
                 child: Text(
                   _formatBookingStatus(
                     status,
+                    languageProvider,
                   ),
 
                   style: TextStyle(
@@ -1376,9 +1385,29 @@ class _OwnerDashboardScreenState
             ),
 
             actionCard(
+              Icons.account_balance_wallet_rounded,
+
+              'حسابات الدفع',
+
+              const Color(0xff14B8A6),
+
+                  () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                    const PaymentAccountsScreen(),
+                  ),
+                );
+              },
+            ),
+
+            actionCard(
               Icons.receipt_long_rounded,
 
-              'Competition Payments',
+              languageProvider.translate(
+                'competition_payments',
+              ),
 
               const Color(0xffEC4899),
 
@@ -1857,12 +1886,14 @@ class _OwnerDashboardScreenState
 
                 const SizedBox(height: 16),
 
-                const Text(
-                  'Unable to load dashboard',
+                Text(
+                  languageProvider.translate(
+                    'unable_to_load_dashboard',
+                  ),
                   textAlign:
                   TextAlign.center,
 
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight:
                     FontWeight.w800,
                     fontSize: 17,
@@ -1875,7 +1906,9 @@ class _OwnerDashboardScreenState
 
                 Text(
                   dashboard.errorMessage ??
-                      'Something went wrong',
+                      languageProvider.translate(
+                        'something_went_wrong',
+                      ),
 
                   textAlign:
                   TextAlign.center,
@@ -1918,8 +1951,10 @@ class _OwnerDashboardScreenState
                     ),
                   ),
 
-                  child: const Text(
-                    'Try Again',
+                  child: Text(
+                    languageProvider.translate(
+                      'try_again',
+                    ),
                   ),
                 ),
               ],
@@ -2275,72 +2310,46 @@ class _OwnerDashboardScreenState
   }
 
 // ============================================================
-// LAST 7 DAYS LABELS
+// LAST 7 DAYS LABELS (localized)
 // ============================================================
 
-  List<String> _getLastSevenDays() {
+  List<String> _getLastSevenDays(
+      LanguageProvider languageProvider,
+      ) {
+    const keys = {
+      DateTime.monday: 'mon',
+      DateTime.tuesday: 'tue',
+      DateTime.wednesday: 'wed',
+      DateTime.thursday: 'thu',
+      DateTime.friday: 'fri',
+      DateTime.saturday: 'sat',
+      DateTime.sunday: 'sun',
+    };
+
     final now =
     DateTime.now();
 
-    final result =
-    <String>[];
+    return List.generate(
+      7,
+          (i) {
+        final date =
+        DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(
+          Duration(
+            days: 6 - i,
+          ),
+        );
 
-    for (int i = 6;
-    i >= 0;
-    i--) {
-      final date =
-      DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(
-        Duration(
-          days: i,
-        ),
-      );
+        final key = keys[date.weekday];
 
-      result.add(
-        _dayShortName(
-          date.weekday,
-        ),
-      );
-    }
-
-    return result;
-  }
-
-// ============================================================
-// WEEK DAY
-// ============================================================
-
-  String _dayShortName(
-      int weekday,
-      ) {
-    switch (weekday) {
-      case DateTime.monday:
-        return 'Mon';
-
-      case DateTime.tuesday:
-        return 'Tue';
-
-      case DateTime.wednesday:
-        return 'Wed';
-
-      case DateTime.thursday:
-        return 'Thu';
-
-      case DateTime.friday:
-        return 'Fri';
-
-      case DateTime.saturday:
-        return 'Sat';
-
-      case DateTime.sunday:
-        return 'Sun';
-
-      default:
-        return '';
-    }
+        return key == null
+            ? ''
+            : languageProvider.translate(key);
+      },
+    );
   }
 
 // ============================================================
@@ -2453,28 +2462,25 @@ class _OwnerDashboardScreenState
   }
 
 // ============================================================
-// BOOKING STATUS TEXT
+// BOOKING STATUS TEXT (localized)
 // ============================================================
 
   String _formatBookingStatus(
       String status,
+      LanguageProvider languageProvider,
       ) {
-    switch (status.toLowerCase()) {
+    final s = status.toLowerCase();
+
+    switch (s) {
       case 'confirmed':
-        return 'Confirmed';
-
       case 'pending':
-        return 'Pending';
-
       case 'rejected':
-        return 'Rejected';
-
       case 'cancelled':
-        return 'Cancelled';
+        return languageProvider.translate(s);
 
       default:
         return status.isEmpty
-            ? 'Unknown'
+            ? languageProvider.translate('unknown')
             : status;
     }
   }

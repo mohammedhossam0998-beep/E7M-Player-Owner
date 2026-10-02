@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class RegistrationStatus extends StatelessWidget {
   const RegistrationStatus({
@@ -50,7 +51,7 @@ class RegistrationStatus extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'pending':
         return _RegistrationStatusConfig(
-          label: 'Pending',
+          label: 'Pending'.tr,
           icon: Icons.hourglass_empty_outlined,
           backgroundColor: colorScheme.secondaryContainer,
           foregroundColor: colorScheme.onSecondaryContainer,
@@ -58,7 +59,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'approved':
         return _RegistrationStatusConfig(
-          label: 'Approved',
+          label: 'Approved'.tr,
           icon: Icons.check_circle_outline,
           backgroundColor: colorScheme.primaryContainer,
           foregroundColor: colorScheme.onPrimaryContainer,
@@ -66,7 +67,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'payment_pending':
         return _RegistrationStatusConfig(
-          label: 'Payment Pending',
+          label: 'Payment Pending'.tr,
           icon: Icons.payment_outlined,
           backgroundColor: colorScheme.tertiaryContainer,
           foregroundColor: colorScheme.onTertiaryContainer,
@@ -74,7 +75,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'paid':
         return _RegistrationStatusConfig(
-          label: 'Paid',
+          label: 'Paid'.tr,
           icon: Icons.verified_outlined,
           backgroundColor: colorScheme.primaryContainer,
           foregroundColor: colorScheme.onPrimaryContainer,
@@ -82,7 +83,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'rejected':
         return _RegistrationStatusConfig(
-          label: 'Rejected',
+          label: 'Rejected'.tr,
           icon: Icons.cancel_outlined,
           backgroundColor: colorScheme.errorContainer,
           foregroundColor: colorScheme.onErrorContainer,
@@ -90,7 +91,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'waitlisted':
         return _RegistrationStatusConfig(
-          label: 'Waitlisted',
+          label: 'Waitlisted'.tr,
           icon: Icons.queue_outlined,
           backgroundColor: colorScheme.secondaryContainer,
           foregroundColor: colorScheme.onSecondaryContainer,
@@ -98,7 +99,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'cancelled':
         return _RegistrationStatusConfig(
-          label: 'Cancelled',
+          label: 'Cancelled'.tr,
           icon: Icons.remove_circle_outline,
           backgroundColor: colorScheme.surfaceContainerHighest,
           foregroundColor: colorScheme.onSurfaceVariant,
@@ -106,7 +107,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'expired':
         return _RegistrationStatusConfig(
-          label: 'Expired',
+          label: 'Expired'.tr,
           icon: Icons.timer_off_outlined,
           backgroundColor: colorScheme.errorContainer,
           foregroundColor: colorScheme.onErrorContainer,
@@ -114,7 +115,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'completed':
         return _RegistrationStatusConfig(
-          label: 'Completed',
+          label: 'Completed'.tr,
           icon: Icons.emoji_events_outlined,
           backgroundColor: colorScheme.primaryContainer,
           foregroundColor: colorScheme.onPrimaryContainer,
@@ -122,7 +123,7 @@ class RegistrationStatus extends StatelessWidget {
 
       case 'disqualified':
         return _RegistrationStatusConfig(
-          label: 'Disqualified',
+          label: 'Disqualified'.tr,
           icon: Icons.block_outlined,
           backgroundColor: colorScheme.errorContainer,
           foregroundColor: colorScheme.onErrorContainer,
@@ -142,7 +143,7 @@ class RegistrationStatus extends StatelessWidget {
     final normalized = value.trim();
 
     if (normalized.isEmpty) {
-      return 'Unknown';
+      return 'Unknown'.tr;
     }
 
     return normalized

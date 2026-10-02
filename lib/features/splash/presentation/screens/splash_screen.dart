@@ -77,28 +77,77 @@ class _SplashScreenState extends State<SplashScreen>
     final hasToken =
     await authController.loadSavedToken();
 
+    if (!mounted) return;
+
+    // ----------------------------------------------------------
+    // NO SAVED SESSION
+    // ----------------------------------------------------------
+
+    if (!hasToken) {
+      final route =
+      await _startupService.getInitialRoute();
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        route,
+      );
+
+      return;
+    }
+
     // ----------------------------------------------------------
     // LOAD CURRENT USER
     // ----------------------------------------------------------
 
-    if (hasToken && mounted) {
-      await authController.getMe();
+    final meLoaded =
+    await authController.getMe();
+
+    if (!mounted) return;
+
+    // ----------------------------------------------------------
+    // INVALID / EXPIRED SESSION
+    // ----------------------------------------------------------
+
+    if (!meLoaded ||
+        authController.user == null) {
+      final route =
+      await _startupService.getInitialRoute();
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        route,
+      );
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // DETERMINE USER ROLE
+    // ----------------------------------------------------------
+
+    final role = authController.user!['role']
+        ?.toString()
+        .toLowerCase();
+
+    // ----------------------------------------------------------
+    // NAVIGATE BY ROLE
+    // ----------------------------------------------------------
+
+    final String route;
+
+    if (role == 'owner') {
+      route = '/owner-dashboard';
+    } else if (role == 'player') {
+      route = '/home';
+    } else {
+      route = '/welcome';
     }
 
     if (!mounted) return;
-
-    // ----------------------------------------------------------
-    // Determine initial route
-    // ----------------------------------------------------------
-
-    final route =
-    await _startupService.getInitialRoute();
-
-    if (!mounted) return;
-
-    // ----------------------------------------------------------
-    // Navigate
-    // ----------------------------------------------------------
 
     Navigator.pushReplacementNamed(
       context,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionPaymentStatus extends StatelessWidget {
   const CompetitionPaymentStatus({
@@ -47,7 +48,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'pending':
         return _PaymentStatusStyle(
-          label: 'Payment Pending',
+          label: 'Payment Pending'.tr,
           icon: Icons.hourglass_empty_rounded,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -56,7 +57,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'submitted':
         return _PaymentStatusStyle(
-          label: 'Under Review',
+          label: 'Under Review'.tr,
           icon: Icons.rate_review_outlined,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -65,7 +66,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'paid':
         return _PaymentStatusStyle(
-          label: 'Paid',
+          label: 'Paid'.tr,
           icon: Icons.check_circle_outline,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -74,7 +75,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'failed':
         return _PaymentStatusStyle(
-          label: 'Payment Failed',
+          label: 'Payment Failed'.tr,
           icon: Icons.error_outline,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -83,7 +84,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'expired':
         return _PaymentStatusStyle(
-          label: 'Expired',
+          label: 'Expired'.tr,
           icon: Icons.timer_off_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -92,7 +93,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'refunded':
         return _PaymentStatusStyle(
-          label: 'Refunded',
+          label: 'Refunded'.tr,
           icon: Icons.currency_exchange_rounded,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -101,7 +102,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       case 'partially_refunded':
         return _PaymentStatusStyle(
-          label: 'Partially Refunded',
+          label: 'Partially Refunded'.tr,
           icon: Icons.currency_exchange_rounded,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -110,7 +111,7 @@ class CompetitionPaymentStatus extends StatelessWidget {
 
       default:
         return _PaymentStatusStyle(
-          label: status.isEmpty ? 'Unknown' : status,
+          label: status.isEmpty ? 'Unknown'.tr : status,
           icon: Icons.info_outline,
           backgroundColor:
           theme.colorScheme.surfaceContainerHighest,

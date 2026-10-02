@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/support_provider.dart';
 import 'create_owner_support_ticket_screen.dart';
 import 'owner_support_ticket_details_screen.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class OwnerSupportTicketsScreen
     extends StatefulWidget {
@@ -44,8 +45,8 @@ class _OwnerSupportTicketsScreenState
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Support',
+        title: Text(
+          'Support'.tr,
           style: TextStyle(
             color: Color(0xff1E1446),
             fontWeight: FontWeight.bold,
@@ -130,7 +131,7 @@ class _OwnerSupportTicketsScreenState
     return ListView(
       physics:
       const AlwaysScrollableScrollPhysics(),
-      children: const [
+      children: [
         SizedBox(height: 130),
         Icon(
           Icons.support_agent,
@@ -140,7 +141,7 @@ class _OwnerSupportTicketsScreenState
         SizedBox(height: 20),
         Center(
           child: Text(
-            'No support tickets',
+            'No support tickets'.tr,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -151,7 +152,7 @@ class _OwnerSupportTicketsScreenState
         SizedBox(height: 8),
         Center(
           child: Text(
-            'Create a ticket if you need help.',
+            'Create a ticket if you need help.'.tr,
             style: TextStyle(
               color: Colors.grey,
             ),
@@ -180,14 +181,14 @@ class _OwnerSupportTicketsScreenState
             const SizedBox(height: 15),
             Text(
               provider.errorMessage ??
-                  'Failed to load support tickets',
+                  'Failed to load support tickets'.tr,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 15),
             ElevatedButton(
               onPressed:
               provider.loadTickets,
-              child: const Text('Retry'),
+              child: Text('Retry'.tr),
             ),
           ],
         ),
@@ -299,11 +300,11 @@ class _TicketCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   _Badge(
-                    text: ticket.status,
+                    text: _humanize(ticket.status),
                     color: _statusColor(),
                   ),
                   _Badge(
-                    text: ticket.priority,
+                    text: _humanize(ticket.priority),
                     color: _priorityColor(),
                   ),
                 ],
@@ -350,4 +351,18 @@ class _Badge extends StatelessWidget {
       ),
     );
   }
+}
+
+// Turns an API value like 'in_progress' into 'In Progress' and translates it.
+String _humanize(String value) {
+  if (value.isEmpty) return value;
+
+  return value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .map((w) => w.isEmpty
+      ? w
+      : w[0].toUpperCase() + w.substring(1).toLowerCase())
+      .join(' ')
+      .tr;
 }

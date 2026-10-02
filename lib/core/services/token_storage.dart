@@ -55,13 +55,19 @@ class TokenStorage {
   static Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.remove(
-      PrefKeys.authToken,
+    await prefs.remove(PrefKeys.authToken);
+    await prefs.setBool(PrefKeys.isLoggedIn, false);
+
+    await prefs.reload();
+
+    print(
+      '🔴 TOKEN AFTER LOGOUT: '
+          '${prefs.getString(PrefKeys.authToken)}',
     );
 
-    await prefs.setBool(
-      PrefKeys.isLoggedIn,
-      false,
+    print(
+      '🔴 IS LOGGED IN: '
+          '${prefs.getBool(PrefKeys.isLoggedIn)}',
     );
   }
 

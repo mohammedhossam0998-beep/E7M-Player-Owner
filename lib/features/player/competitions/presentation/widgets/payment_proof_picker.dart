@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class PaymentProofPicker extends StatefulWidget {
   const PaymentProofPicker({
@@ -65,7 +66,7 @@ class _PaymentProofPickerState extends State<PaymentProofPicker> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Unable to select payment proof: $error',
+            'Unable to select payment proof: {error}'.trArgs({'error': error}),
           ),
         ),
       );
@@ -91,7 +92,7 @@ class _PaymentProofPickerState extends State<PaymentProofPicker> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take Photo'),
+                title: Text('Take Photo'.tr),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _pickImage(ImageSource.camera);
@@ -99,7 +100,7 @@ class _PaymentProofPickerState extends State<PaymentProofPicker> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose From Gallery'),
+                title: Text('Choose From Gallery'.tr),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _pickImage(ImageSource.gallery);
@@ -108,7 +109,7 @@ class _PaymentProofPickerState extends State<PaymentProofPicker> {
               if (_selectedFile != null)
                 ListTile(
                   leading: const Icon(Icons.delete_outline),
-                  title: const Text('Remove Proof'),
+                  title: Text('Remove Proof'.tr),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _removeFile();
@@ -139,14 +140,14 @@ class _PaymentProofPickerState extends State<PaymentProofPicker> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payment Proof',
+          'Payment Proof'.tr,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          'Upload a clear screenshot or photo of your payment.',
+          'Upload a clear screenshot or photo of your payment.'.tr,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.4,
@@ -213,15 +214,15 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               isPicking
-                  ? 'Selecting image...'
-                  : 'Add Payment Proof',
+                  ? 'Selecting image...'.tr
+                  : 'Add Payment Proof'.tr,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap to take a photo or choose one from your gallery.',
+              'Tap to take a photo or choose one from your gallery.'.tr,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -232,7 +233,7 @@ class _EmptyState extends StatelessWidget {
             FilledButton.icon(
               onPressed: isPicking ? null : onTap,
               icon: const Icon(Icons.add_photo_alternate_outlined),
-              label: const Text('Choose Image'),
+              label: Text('Choose Image'.tr),
             ),
           ],
         ),
@@ -303,12 +304,12 @@ class _SelectedFileView extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Change',
+                  tooltip: 'Change'.tr,
                   onPressed: isPicking ? null : onChange,
                   icon: const Icon(Icons.edit_outlined),
                 ),
                 IconButton(
-                  tooltip: 'Remove',
+                  tooltip: 'Remove'.tr,
                   onPressed: isPicking ? null : onRemove,
                   icon: Icon(
                     Icons.delete_outline,

@@ -12,7 +12,6 @@ class OwnerOtpScreen extends StatefulWidget {
   final String email;
   final String phone;
   final String city;
-  final int registrationId;
 
   const OwnerOtpScreen({
     super.key,
@@ -20,7 +19,6 @@ class OwnerOtpScreen extends StatefulWidget {
     required this.email,
     required this.phone,
     required this.city,
-    required this.registrationId,
   });
 
   @override
@@ -59,15 +57,12 @@ class _OwnerOtpScreenState extends State<OwnerOtpScreen> {
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
-
-  // ============================================================
-  // VERIFY
-  //
-  // ✨ إصلاح: بعد التحقق من الـ OTP، الأونر مش بيروح على
-  // PendingApprovalScreen على طول - لازم يعمل SetPassword الأول
-  // عشان يتحفظله JWT + user، غير كده حسابه هيفضل من غير password
-  // خالص. AuthController.verifyOtp() بيمسح الـ token والـ user
-  // عن قصد، لأن الـ JWT بيتعمل بعد setPassword فقط.
+ // بعد التحقق من الـ OTP، الـ Owner ينتقل إلى SetPasswordScreen.
+ // يتم إنشاء الحساب بعد تعيين كلمة المرور.
+ // الـ Owner لا يحصل على JWT في هذه المرحلة؛
+ // الحساب يظل Pending إلى أن تتم موافقة الـ Admin.
+ // AuthController.verifyOtp() يحتفظ بـ registrationToken
+ // لاستخدامه في خطوة Set Password.
   // ============================================================
 
   Future<void> _handleVerify(AuthController authController) async {

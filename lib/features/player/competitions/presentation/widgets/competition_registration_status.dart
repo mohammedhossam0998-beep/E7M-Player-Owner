@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionRegistrationStatus extends StatelessWidget {
   const CompetitionRegistrationStatus({
@@ -49,7 +50,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
     switch (status.toLowerCase().trim()) {
       case 'pending':
         return _RegistrationStatusStyle(
-          label: 'Pending',
+          label: 'Pending'.tr,
           icon: Icons.hourglass_empty_rounded,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -59,7 +60,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'approved':
         return _RegistrationStatusStyle(
-          label: 'Approved',
+          label: 'Approved'.tr,
           icon: Icons.check_circle_outline,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -69,7 +70,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'payment_pending':
         return _RegistrationStatusStyle(
-          label: 'Payment Required',
+          label: 'Payment Required'.tr,
           icon: Icons.payments_outlined,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -79,7 +80,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'paid':
         return _RegistrationStatusStyle(
-          label: 'Registered',
+          label: 'Registered'.tr,
           icon: Icons.verified_outlined,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -89,7 +90,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'rejected':
         return _RegistrationStatusStyle(
-          label: 'Rejected',
+          label: 'Rejected'.tr,
           icon: Icons.cancel_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -99,7 +100,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'waitlisted':
         return _RegistrationStatusStyle(
-          label: 'Waitlisted',
+          label: 'Waitlisted'.tr,
           icon: Icons.format_list_numbered_rounded,
           backgroundColor:
           theme.colorScheme.secondary.withOpacity(0.12),
@@ -110,7 +111,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
       case 'cancelled':
       case 'canceled':
         return _RegistrationStatusStyle(
-          label: 'Cancelled',
+          label: 'Cancelled'.tr,
           icon: Icons.block_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -120,7 +121,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'expired':
         return _RegistrationStatusStyle(
-          label: 'Expired',
+          label: 'Expired'.tr,
           icon: Icons.timer_off_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -130,7 +131,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'completed':
         return _RegistrationStatusStyle(
-          label: 'Completed',
+          label: 'Completed'.tr,
           icon: Icons.emoji_events_outlined,
           backgroundColor:
           theme.colorScheme.primary.withOpacity(0.12),
@@ -140,7 +141,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       case 'disqualified':
         return _RegistrationStatusStyle(
-          label: 'Disqualified',
+          label: 'Disqualified'.tr,
           icon: Icons.gpp_bad_outlined,
           backgroundColor:
           theme.colorScheme.error.withOpacity(0.12),
@@ -150,7 +151,7 @@ class CompetitionRegistrationStatus extends StatelessWidget {
 
       default:
         return _RegistrationStatusStyle(
-          label: status.isEmpty ? 'Unknown' : status,
+          label: status.isEmpty ? 'Unknown'.tr : status,
           icon: Icons.info_outline,
           backgroundColor:
           theme.colorScheme.surfaceContainerHighest,

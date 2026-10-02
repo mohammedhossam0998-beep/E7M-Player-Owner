@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/competition_invitation_model.dart';
 import '../../providers/competition_provider.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class CompetitionInvitationsScreen extends StatelessWidget {
   const CompetitionInvitationsScreen({super.key});
@@ -29,8 +30,8 @@ class _InvitationsView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        title: const Text(
-          'Invitations',
+        title: Text(
+          'Invitations'.tr,
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         backgroundColor: Colors.white,
@@ -66,10 +67,10 @@ class _InvitationsView extends StatelessWidget {
 
     if (provider.hasError && provider.invitations.isEmpty) {
       return ListView(
-        children: const [
+        children: [
           SizedBox(height: 170),
           Center(
-            child: Text('Failed to load invitations'),
+            child: Text('Failed to load invitations'.tr),
           ),
         ],
       );
@@ -77,7 +78,7 @@ class _InvitationsView extends StatelessWidget {
 
     if (provider.invitations.isEmpty) {
       return ListView(
-        children: const [
+        children: [
           SizedBox(height: 160),
           Center(
             child: Icon(
@@ -89,7 +90,7 @@ class _InvitationsView extends StatelessWidget {
           SizedBox(height: 14),
           Center(
             child: Text(
-              'No invitations yet',
+              'No invitations yet'.tr,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -127,13 +128,13 @@ class _InvitationCard extends StatelessWidget {
     final pending = invitation.isPending;
 
     final name = invitation.competitionName ??
-        'Competition #${invitation.competitionId}';
+        'Competition #{id}'.trArgs({'id': invitation.competitionId});
 
     final fee = invitation.entryFee == null
         ? null
         : (invitation.entryFee == 0
-        ? 'Free'
-        : '${invitation.entryFee!.toStringAsFixed(2)} EGP');
+        ? 'Free'.tr
+        : '{amount} EGP'.trArgs({'amount': invitation.entryFee!.toStringAsFixed(2)}));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -175,22 +176,22 @@ class _InvitationCard extends StatelessWidget {
 
           if (invitation.competitionType != null)
             Text(
-              'Type: ${invitation.competitionType}',
+              'Type: {value}'.trArgs({'value': invitation.competitionType}),
             ),
 
           if (fee != null)
             Text(
-              'Entry fee: $fee',
+              'Entry fee: {value}'.trArgs({'value': fee}),
             ),
 
           if (invitation.teamName != null)
             Text(
-              'Team: ${invitation.teamName}',
+              'Team: {value}'.trArgs({'value': invitation.teamName}),
             ),
 
           if (invitation.competitionStartDate != null)
             Text(
-              'Date: ${_date(invitation.competitionStartDate!)}',
+              'Date: {value}'.trArgs({'value': _date(invitation.competitionStartDate!)}),
             ),
 
           if (pending) ...[
@@ -210,9 +211,9 @@ class _InvitationCard extends StatelessWidget {
                         SnackBar(
                           content: Text(
                             ok
-                                ? 'Invitation rejected'
+                                ? 'Invitation rejected'.tr
                                 : provider.errorMessage ??
-                                'Failed',
+                                'Failed'.tr,
                           ),
                         ),
                       );
@@ -221,7 +222,7 @@ class _InvitationCard extends StatelessWidget {
                         await provider.loadInvitations();
                       }
                     },
-                    child: const Text('Reject'),
+                    child: Text('Reject'.tr),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -238,9 +239,9 @@ class _InvitationCard extends StatelessWidget {
                         SnackBar(
                           content: Text(
                             ok
-                                ? 'Invitation accepted'
+                                ? 'Invitation accepted'.tr
                                 : provider.errorMessage ??
-                                'Failed',
+                                'Failed'.tr,
                           ),
                         ),
                       );
@@ -255,7 +256,7 @@ class _InvitationCard extends StatelessWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                     ),
-                    child: const Text('Accept'),
+                    child: Text('Accept'.tr),
                   ),
                 ),
               ],

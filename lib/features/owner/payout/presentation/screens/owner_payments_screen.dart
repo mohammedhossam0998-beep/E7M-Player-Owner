@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/owner_payment_provider.dart';
 import '../../data/models/owner_payment_model.dart';
+import 'package:e7m/shared/localization/app_translations.dart';
 
 class OwnerPaymentsScreen extends StatefulWidget {
   const OwnerPaymentsScreen({super.key});
@@ -39,17 +40,17 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
     if (!hasTransactionReference) {
       _showSnackBar(
-        'Cannot approve: no transaction reference submitted by the player yet',
+        'Cannot approve: no transaction reference submitted by the player yet'.tr,
         isError: true,
       );
       return;
     }
 
     final confirmed = await _showConfirmDialog(
-      title: 'Approve Payment',
+      title: 'Approve Payment'.tr,
       message:
-      'Are you sure you want to approve this deposit payment?',
-      confirmText: 'Approve',
+      'Are you sure you want to approve this deposit payment?'.tr,
+      confirmText: 'Approve'.tr,
       isDanger: false,
     );
 
@@ -65,13 +66,13 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
     if (success) {
       _showSnackBar(
-        'Payment approved successfully',
+        'Payment approved successfully'.tr,
         isError: false,
       );
     } else {
       _showSnackBar(
         provider.errorMessage ??
-            'Failed to approve payment',
+            'Failed to approve payment'.tr,
         isError: true,
       );
     }
@@ -85,10 +86,10 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
       OwnerPaymentModel payment,
       ) async {
     final confirmed = await _showConfirmDialog(
-      title: 'Reject Payment',
+      title: 'Reject Payment'.tr,
       message:
-      'Are you sure you want to reject this deposit payment?',
-      confirmText: 'Reject',
+      'Are you sure you want to reject this deposit payment?'.tr,
+      confirmText: 'Reject'.tr,
       isDanger: true,
     );
 
@@ -104,13 +105,13 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
     if (success) {
       _showSnackBar(
-        'Payment rejected successfully',
+        'Payment rejected successfully'.tr,
         isError: false,
       );
     } else {
       _showSnackBar(
         provider.errorMessage ??
-            'Failed to reject payment',
+            'Failed to reject payment'.tr,
         isError: true,
       );
     }
@@ -137,7 +138,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
               onPressed: () {
                 Navigator.of(dialogContext).pop(false);
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -185,13 +186,13 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
   String _statusText(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Pending';
+        return 'Pending'.tr;
 
       case 'paid':
-        return 'Paid';
+        return 'Paid'.tr;
 
       case 'failed':
-        return 'Rejected';
+        return 'Rejected'.tr;
 
       default:
         return status;
@@ -225,22 +226,22 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
   String _paymentMethodText(String method) {
     switch (method.toLowerCase()) {
       case 'instapay':
-        return 'InstaPay';
+        return 'InstaPay'.tr;
 
       case 'vodafone_cash':
-        return 'Vodafone Cash';
+        return 'Vodafone Cash'.tr;
 
       case 'orange_cash':
-        return 'Orange Cash';
+        return 'Orange Cash'.tr;
 
       case 'etisalat_cash':
-        return 'Etisalat Cash';
+        return 'Etisalat Cash'.tr;
 
       case 'cash':
-        return 'Cash';
+        return 'Cash'.tr;
 
       default:
-        return method.isEmpty ? 'Unknown' : method;
+        return method.isEmpty ? 'Unknown'.tr : method;
     }
   }
 
@@ -269,8 +270,8 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Owner Payments',
+        title: Text(
+          'Owner Payments'.tr,
         ),
         actions: [
           Consumer<OwnerPaymentProvider>(
@@ -359,7 +360,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
       children: [
         Expanded(
           child: _buildSummaryCard(
-            title: 'Pending',
+            title: 'Pending'.tr,
             value: provider.pendingCount
                 .toString(),
             icon: Icons.pending_actions,
@@ -371,7 +372,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
         Expanded(
           child: _buildSummaryCard(
-            title: 'Paid',
+            title: 'Paid'.tr,
             value:
             provider.paidCount.toString(),
             icon: Icons.check_circle_outline,
@@ -383,7 +384,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
         Expanded(
           child: _buildSummaryCard(
-            title: 'Rejected',
+            title: 'Rejected'.tr,
             value:
             provider.failedCount.toString(),
             icon: Icons.cancel_outlined,
@@ -465,7 +466,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
             Text(
               provider.errorMessage ??
-                  'Something went wrong',
+                  'Something went wrong'.tr,
               textAlign: TextAlign.center,
             ),
 
@@ -477,8 +478,8 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
               icon: const Icon(
                 Icons.refresh,
               ),
-              label: const Text(
-                'Try Again',
+              label: Text(
+                'Try Again'.tr,
               ),
             ),
           ],
@@ -499,7 +500,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
       child: ListView(
         physics:
         const AlwaysScrollableScrollPhysics(),
-        children: const [
+        children: [
           SizedBox(height: 180),
 
           Icon(
@@ -511,7 +512,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
           Center(
             child: Text(
-              'No payments found',
+              'No payments found'.tr,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -523,7 +524,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
           Center(
             child: Text(
-              'Payments will appear here',
+              'Payments will appear here'.tr,
             ),
           ),
         ],
@@ -574,7 +575,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Payment #${payment.id}',
+                    'Payment #{id}'.trArgs({'id': payment.id}),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight:
@@ -619,13 +620,13 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
             _infoRow(
               icon: Icons.person_outline,
-              label: 'Player',
+              label: 'Player'.tr,
               value: payment.playerName,
             ),
 
             _infoRow(
               icon: Icons.email_outlined,
-              label: 'Email',
+              label: 'Email'.tr,
               value: payment.playerEmail,
             ),
 
@@ -636,7 +637,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
             _infoRow(
               icon:
               Icons.receipt_long_outlined,
-              label: 'Booking',
+              label: 'Booking'.tr,
               value:
               '#${payment.bookingId}',
             ),
@@ -647,7 +648,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
             _infoRow(
               icon: Icons.sports_soccer,
-              label: 'Pitch',
+              label: 'Pitch'.tr,
               value: payment.pitchName,
             ),
 
@@ -658,25 +659,25 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
             _infoRow(
               icon:
               Icons.payments_outlined,
-              label: 'Amount',
+              label: 'Amount'.tr,
               value:
-              '${payment.amount.toStringAsFixed(2)} EGP',
+              '{amount} EGP'.trArgs({'amount': payment.amount.toStringAsFixed(2)}),
             ),
 
             _infoRow(
               icon: Icons
                   .account_balance_wallet_outlined,
-              label: 'Deposit',
+              label: 'Deposit'.tr,
               value:
-              '${payment.depositAmount.toStringAsFixed(2)} EGP',
+              '{amount} EGP'.trArgs({'amount': payment.depositAmount.toStringAsFixed(2)}),
             ),
 
             _infoRow(
               icon:
               Icons.pending_actions_outlined,
-              label: 'Remaining',
+              label: 'Remaining'.tr,
               value:
-              '${payment.remainingAmount.toStringAsFixed(2)} EGP',
+              '{amount} EGP'.trArgs({'amount': payment.remainingAmount.toStringAsFixed(2)}),
             ),
 
             // ====================================================
@@ -686,7 +687,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
             _infoRow(
               icon:
               Icons.account_balance_outlined,
-              label: 'Method',
+              label: 'Method'.tr,
               value:
               _paymentMethodText(
                 payment.paymentMethod,
@@ -699,8 +700,8 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
             _infoRow(
               icon: Icons.category_outlined,
-              label: 'Type',
-              value: payment.paymentType,
+              label: 'Type'.tr,
+              value: _paymentTypeLabel(payment.paymentType),
             ),
 
             // ====================================================
@@ -709,10 +710,10 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
 
             _infoRow(
               icon: Icons.tag,
-              label: 'Transaction',
+              label: 'Transaction'.tr,
               value:
               payment.transactionReference ??
-                  'Not submitted',
+                  'Not submitted'.tr,
             ),
 
             // ====================================================
@@ -722,7 +723,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
             _infoRow(
               icon:
               Icons.calendar_today_outlined,
-              label: 'Date',
+              label: 'Date'.tr,
               value: _formatDate(
                 payment.slotDate,
               ),
@@ -735,7 +736,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
             _infoRow(
               icon:
               Icons.access_time,
-              label: 'Time',
+              label: 'Time'.tr,
               value:
               '${payment.startTime} - ${payment.endTime}',
             ),
@@ -761,7 +762,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
                   ),
                 ),
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.info_outline,
                       size: 18,
@@ -770,7 +771,7 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Waiting for the player to submit a transaction reference before this can be approved',
+                        'Waiting for the player to submit a transaction reference before this can be approved'.tr,
                         style: TextStyle(
                           fontSize: 12.5,
                           color: Colors.orange,
@@ -808,8 +809,8 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
                         icon: const Icon(
                           Icons.close,
                         ),
-                        label: const Text(
-                          'Reject',
+                        label: Text(
+                          'Reject'.tr,
                         ),
                         style:
                         OutlinedButton.styleFrom(
@@ -833,8 +834,8 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
                         icon: const Icon(
                           Icons.check,
                         ),
-                        label: const Text(
-                          'Approve',
+                        label: Text(
+                          'Approve'.tr,
                         ),
                       ),
                     ),
@@ -892,5 +893,17 @@ class _OwnerPaymentsScreenState extends State<OwnerPaymentsScreen> {
         ],
       ),
     );
+  }
+}
+
+// Translates the raw payment type coming from the API.
+String _paymentTypeLabel(String type) {
+  switch (type) {
+    case 'deposit':
+      return 'Deposit'.tr;
+    case 'full_payment':
+      return 'Full Payment'.tr;
+    default:
+      return type;
   }
 }

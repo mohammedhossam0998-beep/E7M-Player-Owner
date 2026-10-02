@@ -1,6 +1,10 @@
 class RouteNames {
   RouteNames._();
 
+  // ============================================================
+  // CORE / APP FLOW
+  // ============================================================
+
   // Splash
   static const String splash = '/';
 
@@ -13,17 +17,35 @@ class RouteNames {
   // Welcome
   static const String welcome = '/welcome';
 
-  // Authentication
+  // ============================================================
+  // AUTHENTICATION
+  // ============================================================
+
   static const String login = '/login';
+
   static const String register = '/register';
 
-  // Player
+  // ============================================================
+  // PLAYER
+  // ============================================================
+
   static const String home = '/home';
+
   static const String myBookings = '/my-bookings';
+
   static const String bookingDetails = '/booking-details';
+
   static const String notifications = '/notifications';
+
   static const String profile = '/profile';
 
-  // Owner
+  // ============================================================
+  // OWNER
+  // ============================================================
+
   static const String ownerDashboard = '/owner-dashboard';
+  static const String ownerNotifications = '/owner-notifications';
+  static const String ownerBookings = '/owner-bookings';
+  static const String ownerPayments = '/owner-payments';
+  static const String ownerReviews = '/owner-reviews';
 }
