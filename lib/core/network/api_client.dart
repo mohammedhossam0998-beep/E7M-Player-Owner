@@ -49,7 +49,7 @@ class ApiClient {
   // TODO: replace with your real production HTTPS domain.
   static const String _prodBaseUrl = 'https://api.your-domain.com';
 
-  static const String _devBaseUrl = 'http://192.168.1.3:5000';
+  static const String _devBaseUrl = 'http://172.16.25.24:5000';
 
   static const String baseUrl = _envBaseUrl != ''
       ? _envBaseUrl

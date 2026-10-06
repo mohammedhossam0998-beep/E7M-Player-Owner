@@ -58,7 +58,7 @@ class _StadiumGalleryScreenState
       return imageUrl;
     }
 
-    return 'http://192.168.1.3:5000$imageUrl';
+    return 'http://172.16.25.24:5000$imageUrl';
   }
 
   // ============================================================

@@ -239,7 +239,7 @@ class StadiumCard extends StatelessWidget {
       return value;
     }
 
-    return '192.168.1.3:5000$value';
+    return '10.61.30.66:5000$value';
   }
 }
 

@@ -345,7 +345,7 @@ class _StadiumImagesScreenState
       return value;
     }
 
-    const baseUrl = 'http://192.168.1.3:5000';
+    const baseUrl = 'http://172.16.25.24:5000';
 
     if (value.startsWith('/')) {
       return '$baseUrl$value';

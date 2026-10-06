@@ -321,10 +321,10 @@ class _CompetitionPaymentsScreenState
     }
 
     if (trimmedUrl.startsWith('/')) {
-      return 'http://192.168.1.3:5000$trimmedUrl';
+      return 'http://172.16.25.24:5000$trimmedUrl';
     }
 
-    return 'http://192.168.1.3:5000/$trimmedUrl';
+    return 'http://172.16.25.24:5000/$trimmedUrl';
   }
 
   // ============================================================
