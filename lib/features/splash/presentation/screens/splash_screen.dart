@@ -219,19 +219,35 @@ class _SplashScreenState extends State<SplashScreen>
               // ------------------------------------------------
               // BRANDING FOOTER
               // ------------------------------------------------
-              const Positioned(
+              Positioned(
                 left: 0,
                 right: 0,
-                bottom: 24,
-                child: Text(
-                  'e7m With selvera',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff145A32),
-                    letterSpacing: 1.5,
-                  ),
+                bottom: 56,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Image(
+                      image: AssetImage(
+                        'assets/images/selvera_logo.png',
+                      ),
+                      width: 58,
+                      height: 58,
+                      semanticLabel: 'Selvera Logo',
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Text(
+                      'E7M with Selvera',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff145A32),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
