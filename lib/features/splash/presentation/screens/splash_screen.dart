@@ -224,7 +224,7 @@ class _SplashScreenState extends State<SplashScreen>
                 right: 0,
                 bottom: 24,
                 child: Text(
-                  'e7m by selvera',
+                  'e7m With selvera',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
