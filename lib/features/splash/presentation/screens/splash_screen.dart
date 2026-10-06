@@ -175,38 +175,63 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Colors.white,
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        child: SafeArea(
+          child: Stack(
             children: [
-              Image.asset(
-                'assets/images/logo.png',
-                width: 150,
-                height: 150,
-                semanticLabel: 'E7M Logo',
-              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 150,
+                      height: 150,
+                      semanticLabel: 'E7M Logo',
+                    ),
 
-              const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-              const Text(
-                'E7gzly Ml3b',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xff145A32),
-                  letterSpacing: 1,
+                    const Text(
+                      'E7gzly Ml3b',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff145A32),
+                        letterSpacing: 1,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    const Text(
+                      'BEYOND THE GAME',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff7CC000),
+                        letterSpacing: 3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: 8),
-
-              const Text(
-                'BEYOND THE GAME',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff7CC000),
-                  letterSpacing: 3,
+              // ------------------------------------------------
+              // BRANDING FOOTER
+              // ------------------------------------------------
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: Text(
+                  'e7m by selvera',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff145A32),
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
             ],
