@@ -1,11 +1,11 @@
 {
-    "name": "e7gzly",
-    "short_name": "e7gzly",
+    "name": "E7gzly Mal3ab",
+    "short_name": "E7gzly Mal3ab",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Book and reserve sports fields easily.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
