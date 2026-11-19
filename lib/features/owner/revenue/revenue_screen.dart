@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'package:e7m/shared/localization/language_provider.dart';
 import '../payout/presentation/payout_screen.dart';
@@ -18,21 +17,9 @@ class RevenueScreen extends StatefulWidget {
   State<RevenueScreen> createState() => _RevenueScreenState();
 }
 
-// ============================================================
-// EXPORT TARGET
-// ============================================================
-
 enum _ExportTarget { excel, pdf }
 
 class _RevenueScreenState extends State<RevenueScreen> {
-  // ==========================================================
-  // EXPORT STATE
-  //
-  // Tracks which export (if any) is currently running, so the
-  // relevant AppBar action can show a spinner and both actions
-  // get disabled to prevent duplicate taps.
-  // ==========================================================
-
   _ExportTarget? _exportingTarget;
 
   @override
@@ -48,10 +35,6 @@ class _RevenueScreenState extends State<RevenueScreen> {
     return '${NumberFormat('#,##0.00').format(amount)} EGP';
   }
 
-  // ==========================================================
-  // EXPORT HANDLERS
-  // ==========================================================
-
   Future<void> _handleExport(_ExportTarget target) async {
     if (_exportingTarget != null) return;
 
@@ -63,24 +46,19 @@ class _RevenueScreenState extends State<RevenueScreen> {
     });
 
     try {
-      final file = target == _ExportTarget.excel
-          ? await RevenueExportService.exportToExcel(
-        provider: revenueProvider,
-        languageProvider: languageProvider,
-      )
-          : await RevenueExportService.exportToPdf(
-        provider: revenueProvider,
-        languageProvider: languageProvider,
-      );
+      if (target == _ExportTarget.excel) {
+        await RevenueExportService.exportToExcel(
+          provider: revenueProvider,
+          languageProvider: languageProvider,
+        );
+      } else {
+        await RevenueExportService.exportToPdf(
+          provider: revenueProvider,
+          languageProvider: languageProvider,
+        );
+      }
 
       if (!mounted) return;
-
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: languageProvider.translate('revenue_report'),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
 
@@ -101,10 +79,6 @@ class _RevenueScreenState extends State<RevenueScreen> {
     }
   }
 
-  // ==========================================================
-  // BUILD
-  // ==========================================================
-
   @override
   Widget build(BuildContext context) {
     final languageProvider =
@@ -115,26 +89,17 @@ class _RevenueScreenState extends State<RevenueScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xffF7F8FA),
-
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
         backgroundColor: Colors.white,
-
         title: Text(
-          languageProvider.translate(
-            'revenue_payments',
-          ),
+          languageProvider.translate('revenue_payments'),
           style: const TextStyle(
             color: Color(0xff1E1446),
             fontWeight: FontWeight.bold,
           ),
         ),
-
-        // ========================================================
-        // EXPORT ACTIONS (EXCEL / PDF)
-        // ========================================================
-
         actions: [
           IconButton(
             tooltip: languageProvider.translate('export_excel'),
@@ -155,7 +120,6 @@ class _RevenueScreenState extends State<RevenueScreen> {
               color: Color(0xff1E1446),
             ),
           ),
-
           IconButton(
             tooltip: languageProvider.translate('export_pdf'),
             onPressed: _exportingTarget != null
@@ -175,57 +139,35 @@ class _RevenueScreenState extends State<RevenueScreen> {
               color: Color(0xff1E1446),
             ),
           ),
-
           const SizedBox(width: 4),
         ],
       ),
-
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xff7CC000),
-
           onRefresh: revenueProvider.refresh,
-
           child: ListView(
             padding: const EdgeInsets.all(20),
-            physics:
-            const AlwaysScrollableScrollPhysics(
+            physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-
             children: [
-              // ============================================================
-              // LOADING
-              // ============================================================
-
               if (revenueProvider.isLoading)
                 const Padding(
-                  padding:
-                  EdgeInsets.only(bottom: 20),
+                  padding: EdgeInsets.only(bottom: 20),
                   child: LinearProgressIndicator(
                     color: Color(0xff7CC000),
-                    backgroundColor:
-                    Color(0xffE8E8E8),
+                    backgroundColor: Color(0xffE8E8E8),
                   ),
                 ),
 
-              // ============================================================
-              // ERROR
-              // ============================================================
-
               if (revenueProvider.error != null)
                 Container(
-                  margin:
-                  const EdgeInsets.only(
-                    bottom: 20,
-                  ),
-                  padding:
-                  const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color:
-                    Colors.red.withOpacity(.08),
-                    borderRadius:
-                    BorderRadius.circular(16),
+                    color: Colors.red.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
@@ -233,24 +175,18 @@ class _RevenueScreenState extends State<RevenueScreen> {
                         Icons.error_outline,
                         color: Colors.red,
                       ),
-
                       const SizedBox(width: 12),
-
                       Expanded(
                         child: Text(
                           revenueProvider.error!,
-                          style:
-                          const TextStyle(
+                          style: const TextStyle(
                             color: Colors.red,
-                            fontWeight:
-                            FontWeight.w600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-
                       IconButton(
-                        onPressed:
-                        revenueProvider.refresh,
+                        onPressed: revenueProvider.refresh,
                         icon: const Icon(
                           Icons.refresh,
                           color: Colors.red,
@@ -260,112 +196,68 @@ class _RevenueScreenState extends State<RevenueScreen> {
                   ),
                 ),
 
-              // ============================================================
-              // REVENUE OVERVIEW
-              // ============================================================
-
               Container(
-                padding:
-                const EdgeInsets.all(24),
-
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                  BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black
-                          .withOpacity(.05),
+                      color: Colors.black.withOpacity(.05),
                       blurRadius: 12,
-                      offset:
-                      const Offset(0, 5),
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      languageProvider.translate(
-                        'revenue_overview',
-                      ),
-                      style:
-                      const TextStyle(
-                        fontWeight:
-                        FontWeight.bold,
+                      languageProvider.translate('revenue_overview'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                         fontSize: 22,
-                        color:
-                        Color(0xff1E1446),
+                        color: Color(0xff1E1446),
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
                     Text(
-                      languageProvider.translate(
-                        'this_month',
-                      ),
-                      style: TextStyle(
-                        color:
-                        Colors.grey.shade600,
-                      ),
+                      languageProvider.translate('this_month'),
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
-
                     const SizedBox(height: 10),
-
                     Text(
-                      _formatAmount(
-                        revenueProvider
-                            .currentMonthRevenue,
-                      ),
-                      style:
-                      const TextStyle(
-                        fontWeight:
-                        FontWeight.bold,
+                      _formatAmount(revenueProvider.currentMonthRevenue),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                         fontSize: 34,
-                        color:
-                        Color(0xff1E1446),
+                        color: Color(0xff1E1446),
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     Row(
                       children: [
                         Icon(
-                          revenueProvider
-                              .revenueGrowthPercentage >=
-                              0
+                          revenueProvider.revenueGrowthPercentage >= 0
                               ? Icons.trending_up
                               : Icons.trending_down,
                           color:
-                          revenueProvider
-                              .revenueGrowthPercentage >=
-                              0
+                          revenueProvider.revenueGrowthPercentage >= 0
                               ? Colors.green
                               : Colors.red,
                         ),
-
                         const SizedBox(width: 6),
-
                         Expanded(
                           child: Text(
                             '${revenueProvider.revenueGrowthPercentage >= 0 ? '+' : ''}'
                                 '${revenueProvider.revenueGrowthPercentage.toStringAsFixed(1)}% '
                                 '${languageProvider.translate('revenue_growth')}',
                             style: TextStyle(
-                              color: revenueProvider
-                                  .revenueGrowthPercentage >=
-                                  0
-                                  ? Colors.green
-                                  .shade700
-                                  : Colors.red
-                                  .shade700,
-                              fontWeight:
-                              FontWeight.w600,
+                              color:
+                              revenueProvider.revenueGrowthPercentage >= 0
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -376,145 +268,82 @@ class _RevenueScreenState extends State<RevenueScreen> {
               ),
 
               const SizedBox(height: 24),
-
-              // ============================================================
-              // CHART
-              // ============================================================
-
               const RevenueChart(),
-
               const SizedBox(height: 24),
-
-              // ============================================================
-              // SUMMARY
-              // ============================================================
-
               const RevenueSummaryCard(),
-
               const SizedBox(height: 24),
-
-              // ============================================================
-              // RECENT TRANSACTIONS
-              // ============================================================
 
               RecentTransactionsCard(
-                transactions:
-                revenueProvider
-                    .recentTransactions,
-
+                transactions: revenueProvider.recentTransactions,
                 onViewAll: () {
-                  // لا توجد شاشة All Transactions
-                  // مرتبطة بالـ Backend حاليًا.
+                  // شاشة كل العمليات غير مربوطة بالـ Backend حاليًا.
                 },
               ),
 
               const SizedBox(height: 24),
 
-              // ============================================================
-              // PAYOUT
-              // ============================================================
-
               Container(
-                padding:
-                const EdgeInsets.all(24),
-
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                  BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black
-                          .withOpacity(.05),
+                      color: Colors.black.withOpacity(.05),
                       blurRadius: 12,
-                      offset:
-                      const Offset(0, 5),
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-
                 child: Column(
                   children: [
                     const Icon(
-                      Icons
-                          .account_balance_wallet_rounded,
-                      color:
-                      Color(0xff7CC000),
+                      Icons.account_balance_wallet_rounded,
+                      color: Color(0xff7CC000),
                       size: 50,
                     ),
-
                     const SizedBox(height: 16),
-
                     Text(
-                      languageProvider.translate(
-                        'withdraw_your_earnings',
-                      ),
-                      textAlign:
-                      TextAlign.center,
-                      style:
-                      const TextStyle(
+                      languageProvider.translate('withdraw_your_earnings'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
                         fontSize: 20,
-                        fontWeight:
-                        FontWeight.bold,
-                        color:
-                        Color(0xff1E1446),
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff1E1446),
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     Text(
                       '${languageProvider.translate('available_balance')}: '
                           '${_formatAmount(revenueProvider.totalRevenue)}',
-                      textAlign:
-                      TextAlign.center,
-                      style: TextStyle(
-                        color:
-                        Colors.grey.shade700,
-                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade700),
                     ),
-
                     const SizedBox(height: 22),
-
                     SizedBox(
                       width: double.infinity,
                       height: 55,
-
-                      child:
-                      FilledButton.icon(
-                        style:
-                        FilledButton.styleFrom(
-                          backgroundColor:
-                          const Color(
-                            0xff7CC000,
-                          ),
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xff7CC000),
                         ),
-
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                              const PayoutScreen(),
+                              builder: (_) => const PayoutScreen(),
                             ),
                           );
                         },
-
                         icon: const Icon(
                           Icons.payments,
                           color: Colors.white,
                         ),
-
                         label: Text(
-                          languageProvider
-                              .translate(
-                            'request_payout',
-                          ),
-                          style:
-                          const TextStyle(
+                          languageProvider.translate('request_payout'),
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),

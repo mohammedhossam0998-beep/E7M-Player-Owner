@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/core/network/api_client.dart';
 
 import '../../data/models/stadium_image.dart';
 
@@ -53,12 +54,7 @@ class _StadiumGalleryScreenState
   // ============================================================
 
   String _resolveImageUrl(String imageUrl) {
-    if (imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://')) {
-      return imageUrl;
-    }
-
-    return 'http://172.16.25.24:5000$imageUrl';
+    return ApiClient.resolveMediaUrl(imageUrl);
   }
 
   // ============================================================
@@ -166,7 +162,6 @@ class _StadiumGalleryScreenState
               },
             ),
           ),
-
           if (widget.images.length > 1)
             _buildThumbnails(),
         ],

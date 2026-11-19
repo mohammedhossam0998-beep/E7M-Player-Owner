@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,20 +6,37 @@ import '../../data/owner_booking_model.dart';
 import '../../providers/owner_bookings_provider.dart';
 import 'package:e7m/shared/localization/app_translations.dart';
 
+// ============================================================
+// OWNER BOOKINGS SCREEN
+// Supports opening a specific booking from notifications.
+// ============================================================
+
 class OwnerBookingsScreen extends StatelessWidget {
-  const OwnerBookingsScreen({super.key});
+  final int? bookingId;
+
+  const OwnerBookingsScreen({
+    super.key,
+    this.bookingId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => OwnerBookingsProvider()..loadBookings(),
-      child: const _OwnerBookingsView(),
+      create: (_) =>
+      OwnerBookingsProvider()..loadBookings(),
+      child: _OwnerBookingsView(
+        bookingId: bookingId,
+      ),
     );
   }
 }
 
 class _OwnerBookingsView extends StatefulWidget {
-  const _OwnerBookingsView();
+  final int? bookingId;
+
+  const _OwnerBookingsView({
+    this.bookingId,
+  });
 
   @override
   State<_OwnerBookingsView> createState() =>
@@ -27,7 +45,9 @@ class _OwnerBookingsView extends StatefulWidget {
 
 class _OwnerBookingsViewState
     extends State<_OwnerBookingsView> {
+
   int _selectedTab = 0;
+  int? _focusedBookingId;
 
   final List<String> _tabs = const [
     'All',
@@ -37,44 +57,96 @@ class _OwnerBookingsViewState
     'Cancelled',
   ];
 
+  // ============================================================
+  // INITIALIZE BOOKING FILTER
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _focusedBookingId = widget.bookingId;
+  }
+
+  // ============================================================
+  // SHOW ALL BOOKINGS
+  // ============================================================
+
+  void _showAllBookings() {
+    setState(() {
+      _focusedBookingId = null;
+      _selectedTab = 0;
+    });
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     return Consumer<OwnerBookingsProvider>(
       builder: (context, provider, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF7F8FA),
+
           appBar: AppBar(
             elevation: 0,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
+
             title: Text(
               'Bookings'.tr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w700,
               ),
             ),
+
             actions: [
+              if (_focusedBookingId != null)
+                TextButton(
+                  onPressed: _showAllBookings,
+                  child: const Text(
+                    'View all',
+                    style: TextStyle(
+                      color: Color(0xFF7CC000),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+
               IconButton(
                 tooltip: 'Refresh'.tr,
                 onPressed: provider.loading
                     ? null
                     : provider.refreshBookings,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                ),
               ),
             ],
           ),
-          body: _buildBody(context, provider),
+
+          body: _buildBody(
+            context,
+            provider,
+          ),
         );
       },
     );
   }
 
+  // ============================================================
+  // BODY
+  // ============================================================
+
   Widget _buildBody(
       BuildContext context,
       OwnerBookingsProvider provider,
       ) {
-    if (provider.loading && provider.bookings.isEmpty) {
+    if (provider.loading &&
+        provider.bookings.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(),
       );
@@ -90,16 +162,27 @@ class _OwnerBookingsViewState
 
     return RefreshIndicator(
       onRefresh: provider.refreshBookings,
+
       child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics:
+        const AlwaysScrollableScrollPhysics(),
+
         slivers: [
           SliverToBoxAdapter(
             child: _buildSummary(provider),
           ),
 
-          SliverToBoxAdapter(
-            child: _buildTabs(provider),
-          ),
+          // Show booking ID when opened from notification.
+          if (_focusedBookingId != null)
+            SliverToBoxAdapter(
+              child: _buildFocusedBookingBanner(),
+            ),
+
+          // Normal tabs only when viewing all bookings.
+          if (_focusedBookingId == null)
+            SliverToBoxAdapter(
+              child: _buildTabs(provider),
+            ),
 
           if (provider.errorMessage != null)
             SliverToBoxAdapter(
@@ -114,6 +197,63 @@ class _OwnerBookingsViewState
               32,
             ),
             sliver: _buildBookingsList(provider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // FOCUSED BOOKING BANNER
+  // ============================================================
+
+  Widget _buildFocusedBookingBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        4,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8E8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFDCEEC6),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.event_note_rounded,
+            color: Color(0xFF608F00),
+          ),
+
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Text(
+              'Booking #$_focusedBookingId',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          TextButton(
+            onPressed: _showAllBookings,
+            child: const Text(
+              'View all',
+              style: TextStyle(
+                color: Color(0xFF608F00),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -143,7 +283,9 @@ class _OwnerBookingsViewState
               icon: Icons.calendar_month_rounded,
             ),
           ),
+
           const SizedBox(width: 10),
+
           Expanded(
             child: _statCard(
               title: 'Pending'.tr,
@@ -151,7 +293,9 @@ class _OwnerBookingsViewState
               icon: Icons.pending_actions_rounded,
             ),
           ),
+
           const SizedBox(width: 10),
+
           Expanded(
             child: _statCard(
               title: 'Confirmed'.tr,
@@ -173,20 +317,24 @@ class _OwnerBookingsViewState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius:
+        BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFE9EBEF),
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Icon(
             icon,
             size: 22,
             color: const Color(0xFF7CC000),
           ),
+
           const SizedBox(height: 10),
+
           Text(
             '$value',
             style: const TextStyle(
@@ -194,7 +342,9 @@ class _OwnerBookingsViewState
               fontWeight: FontWeight.w800,
             ),
           ),
+
           const SizedBox(height: 2),
+
           Text(
             title,
             style: TextStyle(
@@ -222,12 +372,17 @@ class _OwnerBookingsViewState
           horizontal: 16,
           vertical: 8,
         ),
+
         scrollDirection: Axis.horizontal,
+
         itemCount: _tabs.length,
+
         separatorBuilder: (_, __) =>
         const SizedBox(width: 8),
+
         itemBuilder: (context, index) {
-          final selected = _selectedTab == index;
+          final selected =
+              _selectedTab == index;
 
           return GestureDetector(
             onTap: () {
@@ -235,22 +390,30 @@ class _OwnerBookingsViewState
                 _selectedTab = index;
               });
             },
+
             child: Container(
-              padding: const EdgeInsets.symmetric(
+              padding:
+              const EdgeInsets.symmetric(
                 horizontal: 17,
               ),
+
               alignment: Alignment.center,
+
               decoration: BoxDecoration(
                 color: selected
                     ? const Color(0xFF7CC000)
                     : Colors.white,
-                borderRadius: BorderRadius.circular(24),
+
+                borderRadius:
+                BorderRadius.circular(24),
+
                 border: Border.all(
                   color: selected
                       ? const Color(0xFF7CC000)
                       : const Color(0xFFE3E5E8),
                 ),
               ),
+
               child: Text(
                 _tabs[index].tr,
                 style: TextStyle(
@@ -288,8 +451,10 @@ class _OwnerBookingsViewState
 
     return SliverList.separated(
       itemCount: bookings.length,
+
       separatorBuilder: (_, __) =>
       const SizedBox(height: 12),
+
       itemBuilder: (context, index) {
         return _buildBookingCard(
           context,
@@ -300,17 +465,33 @@ class _OwnerBookingsViewState
     );
   }
 
+  // ============================================================
+  // FILTER BOOKINGS
+  // ============================================================
+
   List<OwnerBookingModel> _filteredBookings(
       List<OwnerBookingModel> bookings,
       ) {
+    // Notification deep link:
+    // Display only the requested booking.
+    if (_focusedBookingId != null) {
+      return bookings.where((booking) {
+        return booking.id == _focusedBookingId;
+      }).toList();
+    }
+
+    // All bookings
     if (_selectedTab == 0) {
       return bookings;
     }
 
-    final status = _tabs[_selectedTab].toLowerCase();
+    // Status filters
+    final status =
+    _tabs[_selectedTab].toLowerCase();
 
     return bookings.where((booking) {
-      return booking.status.toLowerCase() == status;
+      return booking.status.toLowerCase() ==
+          status;
     }).toList();
   }
 
@@ -324,30 +505,42 @@ class _OwnerBookingsViewState
       OwnerBookingModel booking,
       ) {
     final isPending =
-        booking.status.toLowerCase() == 'pending';
+        booking.status.toLowerCase() ==
+            'pending';
 
     final isProcessing =
-        provider.processingBookingId == booking.id;
+        provider.processingBookingId ==
+            booking.id;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+
+        borderRadius:
+        BorderRadius.circular(18),
+
         border: Border.all(
           color: const Color(0xFFE7E9ED),
         ),
+
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(
+              alpha: 0.03,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
+
       child: Padding(
         padding: const EdgeInsets.all(16),
+
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+
           children: [
             _buildBookingHeader(booking),
 
@@ -374,8 +567,11 @@ class _OwnerBookingsViewState
             ),
 
             if (booking.pitchAddress != null &&
-                booking.pitchAddress!.trim().isNotEmpty) ...[
+                booking.pitchAddress!
+                    .trim()
+                    .isNotEmpty) ...[
               const SizedBox(height: 7),
+
               _buildInfoRow(
                 icon: Icons.location_on_outlined,
                 title: 'Address'.tr,
@@ -386,7 +582,8 @@ class _OwnerBookingsViewState
             const SizedBox(height: 11),
 
             _buildInfoRow(
-              icon: Icons.calendar_today_outlined,
+              icon:
+              Icons.calendar_today_outlined,
               title: 'Date'.tr,
               value: _formatDate(
                 booking.slotDate,
@@ -417,6 +614,7 @@ class _OwnerBookingsViewState
 
             if (isPending) ...[
               const SizedBox(height: 16),
+
               _buildActionButtons(
                 context,
                 provider,
@@ -431,29 +629,34 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // HEADER
+  // BOOKING HEADER
   // ============================================================
 
   Widget _buildBookingHeader(
       OwnerBookingModel booking,
       ) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment:
             CrossAxisAlignment.start,
+
             children: [
               Text(
                 'Booking'.tr,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
               ),
+
               const SizedBox(height: 4),
+
               Text(
                 '#${booking.id}',
                 style: const TextStyle(
@@ -464,41 +667,57 @@ class _OwnerBookingsViewState
             ],
           ),
         ),
+
         _statusBadge(booking.status),
       ],
     );
   }
 
+  // ============================================================
+  // STATUS BADGE
+  // ============================================================
+
   Widget _statusBadge(String status) {
-    final normalized = status.toLowerCase();
+    final normalized =
+    status.toLowerCase();
 
     Color background;
     Color foreground;
 
     switch (normalized) {
       case 'confirmed':
-        background = const Color(0xFFEAF8D8);
-        foreground = const Color(0xFF4F8500);
+        background =
+        const Color(0xFFEAF8D8);
+        foreground =
+        const Color(0xFF4F8500);
         break;
 
       case 'pending':
-        background = const Color(0xFFFFF4D6);
-        foreground = const Color(0xFF9A6A00);
+        background =
+        const Color(0xFFFFF4D6);
+        foreground =
+        const Color(0xFF9A6A00);
         break;
 
       case 'rejected':
-        background = const Color(0xFFFFE5E5);
-        foreground = const Color(0xFFC0392B);
+        background =
+        const Color(0xFFFFE5E5);
+        foreground =
+        const Color(0xFFC0392B);
         break;
 
       case 'cancelled':
-        background = const Color(0xFFEDEEF0);
-        foreground = const Color(0xFF666A70);
+        background =
+        const Color(0xFFEDEEF0);
+        foreground =
+        const Color(0xFF666A70);
         break;
 
       default:
-        background = const Color(0xFFEDEEF0);
-        foreground = const Color(0xFF666A70);
+        background =
+        const Color(0xFFEDEEF0);
+        foreground =
+        const Color(0xFF666A70);
     }
 
     return Container(
@@ -506,10 +725,13 @@ class _OwnerBookingsViewState
         horizontal: 11,
         vertical: 7,
       ),
+
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+        BorderRadius.circular(20),
       ),
+
       child: Text(
         _capitalize(status),
         style: TextStyle(
@@ -522,7 +744,7 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // INFO ROW
+  // INFORMATION ROW
   // ============================================================
 
   Widget _buildInfoRow({
@@ -533,25 +755,32 @@ class _OwnerBookingsViewState
     return Row(
       crossAxisAlignment:
       CrossAxisAlignment.start,
+
       children: [
         Container(
           width: 34,
           height: 34,
+
           decoration: BoxDecoration(
             color: const Color(0xFFF1F8E8),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius:
+            BorderRadius.circular(10),
           ),
+
           child: const Icon(
             Icons.circle,
             size: 7,
             color: Color(0xFF7CC000),
           ),
         ),
+
         const SizedBox(width: 10),
+
         Expanded(
           child: Column(
             crossAxisAlignment:
             CrossAxisAlignment.start,
+
             children: [
               Text(
                 title,
@@ -561,11 +790,15 @@ class _OwnerBookingsViewState
                   fontWeight: FontWeight.w500,
                 ),
               ),
+
               const SizedBox(height: 2),
+
               Text(
                 value,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                overflow:
+                TextOverflow.ellipsis,
+
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -579,7 +812,7 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // PAYMENT
+  // PAYMENT INFORMATION
   // ============================================================
 
   Widget _buildPaymentSection(
@@ -587,10 +820,13 @@ class _OwnerBookingsViewState
       ) {
     return Container(
       padding: const EdgeInsets.all(13),
+
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius:
+        BorderRadius.circular(13),
       ),
+
       child: Column(
         children: [
           _paymentRow(
@@ -598,18 +834,24 @@ class _OwnerBookingsViewState
             _money(booking.totalPrice),
             bold: true,
           ),
+
           const SizedBox(height: 8),
+
           _paymentRow(
             'Deposit'.tr,
             _money(booking.depositAmount),
           ),
+
           const SizedBox(height: 8),
+
           _paymentRow(
             'Remaining'.tr,
             _money(booking.remainingAmount),
           ),
+
           if (booking.paymentStatus != null) ...[
             const SizedBox(height: 8),
+
             _paymentRow(
               'Payment status'.tr,
               _capitalize(
@@ -641,6 +883,7 @@ class _OwnerBookingsViewState
             ),
           ),
         ),
+
         Text(
           value,
           style: TextStyle(
@@ -668,10 +911,13 @@ class _OwnerBookingsViewState
       return Container(
         height: 48,
         alignment: Alignment.center,
+
         decoration: BoxDecoration(
           color: const Color(0xFFF4F5F6),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius:
+          BorderRadius.circular(12),
         ),
+
         child: const SizedBox(
           width: 21,
           height: 21,
@@ -693,27 +939,35 @@ class _OwnerBookingsViewState
                 booking,
               );
             },
+
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+              minimumSize:
+              const Size.fromHeight(48),
+
               foregroundColor:
               const Color(0xFFC0392B),
+
               side: const BorderSide(
                 color: Color(0xFFE1A7A2),
               ),
+
               shape: RoundedRectangleBorder(
                 borderRadius:
                 BorderRadius.circular(12),
               ),
             ),
+
             child: Text(
               'Reject'.tr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
         ),
+
         const SizedBox(width: 10),
+
         Expanded(
           child: ElevatedButton(
             onPressed: () {
@@ -723,20 +977,26 @@ class _OwnerBookingsViewState
                 booking,
               );
             },
+
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+              minimumSize:
+              const Size.fromHeight(48),
+
               backgroundColor:
               const Color(0xFF7CC000),
+
               foregroundColor: Colors.white,
               elevation: 0,
+
               shape: RoundedRectangleBorder(
                 borderRadius:
                 BorderRadius.circular(12),
               ),
             ),
+
             child: Text(
               'Approve'.tr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -747,7 +1007,7 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // APPROVE DIALOG
+  // APPROVE BOOKING
   // ============================================================
 
   Future<void> _showApproveDialog(
@@ -757,14 +1017,20 @@ class _OwnerBookingsViewState
       ) async {
     final confirmed = await showDialog<bool>(
       context: context,
+
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(
             'Approve booking?'.tr,
           ),
+
           content: Text(
-            'Are you sure you want to approve booking #{id}?'.trArgs({'id': booking.id}),
+            'Are you sure you want to approve booking #{id}?'
+                .trArgs({
+              'id': booking.id,
+            }),
           ),
+
           actions: [
             TextButton(
               onPressed: () {
@@ -775,6 +1041,7 @@ class _OwnerBookingsViewState
               },
               child: Text('Cancel'.tr),
             ),
+
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(
@@ -782,11 +1049,14 @@ class _OwnerBookingsViewState
                   true,
                 );
               },
+
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                 const Color(0xFF7CC000),
-                foregroundColor: Colors.white,
+                foregroundColor:
+                Colors.white,
               ),
+
               child: Text('Approve'.tr),
             ),
           ],
@@ -794,7 +1064,8 @@ class _OwnerBookingsViewState
       },
     );
 
-    if (confirmed != true || !context.mounted) {
+    if (confirmed != true ||
+        !context.mounted) {
       return;
     }
 
@@ -803,7 +1074,9 @@ class _OwnerBookingsViewState
       booking.id,
     );
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     if (success) {
       _showMessage(
@@ -820,7 +1093,7 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // REJECT DIALOG
+  // REJECT BOOKING
   // ============================================================
 
   Future<void> _showRejectDialog(
@@ -830,14 +1103,20 @@ class _OwnerBookingsViewState
       ) async {
     final confirmed = await showDialog<bool>(
       context: context,
+
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(
             'Reject booking?'.tr,
           ),
+
           content: Text(
-            'Are you sure you want to reject booking #{id}?'.trArgs({'id': booking.id}),
+            'Are you sure you want to reject booking #{id}?'
+                .trArgs({
+              'id': booking.id,
+            }),
           ),
+
           actions: [
             TextButton(
               onPressed: () {
@@ -848,6 +1127,7 @@ class _OwnerBookingsViewState
               },
               child: Text('Cancel'.tr),
             ),
+
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(
@@ -855,11 +1135,14 @@ class _OwnerBookingsViewState
                   true,
                 );
               },
+
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                 const Color(0xFFC0392B),
-                foregroundColor: Colors.white,
+                foregroundColor:
+                Colors.white,
               ),
+
               child: Text('Reject'.tr),
             ),
           ],
@@ -867,7 +1150,8 @@ class _OwnerBookingsViewState
       },
     );
 
-    if (confirmed != true || !context.mounted) {
+    if (confirmed != true ||
+        !context.mounted) {
       return;
     }
 
@@ -876,7 +1160,9 @@ class _OwnerBookingsViewState
       booking.id,
     );
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     if (success) {
       _showMessage(
@@ -893,7 +1179,7 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // ERROR
+  // ERROR STATE
   // ============================================================
 
   Widget _buildErrorState(
@@ -903,33 +1189,43 @@ class _OwnerBookingsViewState
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
+
         child: Column(
           mainAxisAlignment:
           MainAxisAlignment.center,
+
           children: [
             const Icon(
               Icons.error_outline_rounded,
               size: 58,
               color: Colors.redAccent,
             ),
+
             const SizedBox(height: 16),
+
             Text(
               'Something went wrong'.tr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
+
             const SizedBox(height: 8),
+
             Text(
               provider.errorMessage ??
                   'Unable to load bookings.'.tr,
+
               textAlign: TextAlign.center,
+
               style: TextStyle(
                 color: Colors.grey.shade600,
               ),
             ),
+
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: provider.loadBookings,
               child: Text('Try Again'.tr),
@@ -950,18 +1246,24 @@ class _OwnerBookingsViewState
         16,
         8,
       ),
+
       padding: const EdgeInsets.all(12),
+
       decoration: BoxDecoration(
         color: const Color(0xFFFFEEEE),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+        BorderRadius.circular(12),
       ),
+
       child: Row(
         children: [
           const Icon(
             Icons.warning_amber_rounded,
             color: Colors.redAccent,
           ),
+
           const SizedBox(width: 10),
+
           Expanded(
             child: Text(
               provider.errorMessage!,
@@ -971,6 +1273,7 @@ class _OwnerBookingsViewState
               ),
             ),
           ),
+
           IconButton(
             onPressed: provider.clearError,
             icon: const Icon(
@@ -984,51 +1287,80 @@ class _OwnerBookingsViewState
   }
 
   // ============================================================
-  // EMPTY
+  // EMPTY STATE
   // ============================================================
 
   Widget _buildEmptyState() {
-    final title = _selectedTab == 0
-        ? 'No bookings yet'.tr
-        : 'No ${_tabs[_selectedTab].toLowerCase()} bookings'.tr;
+    final String title;
+
+    if (_focusedBookingId != null) {
+      title = 'Booking #$_focusedBookingId not found';
+    } else if (_selectedTab == 0) {
+      title = 'No bookings yet'.tr;
+    } else {
+      title =
+          'No ${_tabs[_selectedTab].toLowerCase()} bookings'
+              .tr;
+    }
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
+
         child: Column(
           mainAxisAlignment:
           MainAxisAlignment.center,
+
           children: [
             Container(
               width: 72,
               height: 72,
+
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F8E8),
                 borderRadius:
                 BorderRadius.circular(22),
               ),
+
               child: const Icon(
                 Icons.calendar_month_outlined,
                 size: 34,
                 color: Color(0xFF7CC000),
               ),
             ),
+
             const SizedBox(height: 16),
+
             Text(
               title,
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
+              textAlign: TextAlign.center,
             ),
+
             const SizedBox(height: 6),
+
             Text(
               'Bookings will appear here.'.tr,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade600,
               ),
+              textAlign: TextAlign.center,
             ),
+
+            if (_focusedBookingId != null) ...[
+              const SizedBox(height: 16),
+
+              OutlinedButton(
+                onPressed: _showAllBookings,
+                child: const Text(
+                  'View all bookings',
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1043,7 +1375,8 @@ class _OwnerBookingsViewState
       String? value, {
         required String fallback,
       }) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null ||
+        value.trim().isEmpty) {
       return fallback;
     }
 
@@ -1051,11 +1384,14 @@ class _OwnerBookingsViewState
   }
 
   String _money(double value) {
-    return '{amount} EGP'.trArgs({'amount': value.toStringAsFixed(2)});
+    return '{amount} EGP'.trArgs({
+      'amount': value.toStringAsFixed(2),
+    });
   }
 
   String _formatDate(String? date) {
-    if (date == null || date.trim().isEmpty) {
+    if (date == null ||
+        date.trim().isEmpty) {
       return 'Not available'.tr;
     }
 
@@ -1078,11 +1414,14 @@ class _OwnerBookingsViewState
   }
 
   String _capitalize(String value) {
-    if (value.isEmpty) return value;
+    if (value.isEmpty) {
+      return value;
+    }
 
-    return (value[0].toUpperCase() +
-        value.substring(1).toLowerCase())
-        .tr;
+    return (
+        value[0].toUpperCase() +
+            value.substring(1).toLowerCase()
+    ).tr;
   }
 
   void _showMessage(

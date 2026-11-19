@@ -16,78 +16,32 @@ class CompetitionProvider extends ChangeNotifier {
 
   CompetitionProvider(this._repository);
 
-  // ============================================================
-  // COMPETITIONS STATE
-  // ============================================================
-
   bool _isLoading = false;
   String? _errorMessage;
 
   List<CompetitionModel> _competitions = [];
   CompetitionModel? _selectedCompetition;
-
-  // ============================================================
-  // PRIZES STATE
-  // ============================================================
-
   List<CompetitionPrizeModel> _prizes = [];
-
-  // ============================================================
-  // REGISTRATIONS STATE
-  // ============================================================
-
   List<CompetitionRegistrationModel> _registrations = [];
-
-  // ============================================================
-  // INVITATIONS STATE
-  // ============================================================
-
   List<CompetitionInvitationModel> _invitations = [];
 
-  // ============================================================
-  // PAYMENTS STATE
-  // ============================================================
-
   List<CompetitionPaymentModel> _payments = [];
-
-  // ============================================================
-  // SEEDING STATE
-  // ============================================================
+  int _paymentSessionVersion = 0;
+  int _paymentRequestVersion = 0;
 
   List<CompetitionSeedingModel> _seeding = [];
-
-  // ============================================================
-  // TOURNAMENT / MATCHES STATE
-  // ============================================================
-
   List<CompetitionMatchModel> _matches = [];
   CompetitionMatchModel? _selectedMatch;
-
-  // ============================================================
-  // STANDINGS STATE
-  // ============================================================
-
   List<CompetitionStandingModel> _standings = [];
-
-  // ============================================================
-  // BRACKET STATE
-  // ============================================================
-
   CompetitionBracketModel? _bracket;
 
-  // ============================================================
-  // GETTERS
-  // ============================================================
-
   bool get isLoading => _isLoading;
-
   String? get errorMessage => _errorMessage;
 
   List<CompetitionModel> get competitions =>
       List.unmodifiable(_competitions);
 
-  CompetitionModel? get selectedCompetition =>
-      _selectedCompetition;
+  CompetitionModel? get selectedCompetition => _selectedCompetition;
 
   List<CompetitionPrizeModel> get prizes =>
       List.unmodifiable(_prizes);
@@ -107,18 +61,12 @@ class CompetitionProvider extends ChangeNotifier {
   List<CompetitionMatchModel> get matches =>
       List.unmodifiable(_matches);
 
-  CompetitionMatchModel? get selectedMatch =>
-      _selectedMatch;
+  CompetitionMatchModel? get selectedMatch => _selectedMatch;
 
   List<CompetitionStandingModel> get standings =>
       List.unmodifiable(_standings);
 
-  CompetitionBracketModel? get bracket =>
-      _bracket;
-
-  // ============================================================
-  // INTERNAL HELPERS
-  // ============================================================
+  CompetitionBracketModel? get bracket => _bracket;
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -138,18 +86,12 @@ class CompetitionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // LOAD OWNER COMPETITIONS
-  // ============================================================
-
   Future<bool> loadCompetitions() async {
     _setLoading(true);
     _clearError();
 
     try {
-      _competitions =
-      await _repository.getOwnerCompetitions();
-
+      _competitions = await _repository.getOwnerCompetitions();
       return true;
     } catch (error) {
       _setError(error);
@@ -159,22 +101,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // LOAD COMPETITION
-  // ============================================================
-
-  Future<bool> loadCompetition(
-      int competitionId,
-      ) async {
+  Future<bool> loadCompetition(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _selectedCompetition =
-      await _repository.getCompetitionById(
-        competitionId,
-      );
-
+      await _repository.getCompetitionById(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -183,10 +116,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // CREATE COMPETITION
-  // ============================================================
 
   Future<CompetitionModel?> createCompetition(
       Map<String, dynamic> data,
@@ -195,11 +124,8 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final competition =
-      await _repository.createCompetition(data);
-
+      final competition = await _repository.createCompetition(data);
       _competitions.insert(0, competition);
-
       return competition;
     } catch (error) {
       _setError(error);
@@ -208,10 +134,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // UPDATE COMPETITION
-  // ============================================================
 
   Future<CompetitionModel?> updateCompetition(
       int competitionId,
@@ -222,14 +144,10 @@ class CompetitionProvider extends ChangeNotifier {
 
     try {
       final updatedCompetition =
-      await _repository.updateCompetition(
-        competitionId,
-        data,
-      );
+      await _repository.updateCompetition(competitionId, data);
 
       final index = _competitions.indexWhere(
-            (competition) =>
-        competition.id == competitionId,
+            (competition) => competition.id == competitionId,
       );
 
       if (index != -1) {
@@ -241,7 +159,6 @@ class CompetitionProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-
       return updatedCompetition;
     } catch (error) {
       _setError(error);
@@ -250,10 +167,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // UPDATE COMPETITION STATUS
-  // ============================================================
 
   Future<CompetitionModel?> updateCompetitionStatus(
       int competitionId,
@@ -270,8 +183,7 @@ class CompetitionProvider extends ChangeNotifier {
       );
 
       final index = _competitions.indexWhere(
-            (competition) =>
-        competition.id == competitionId,
+            (competition) => competition.id == competitionId,
       );
 
       if (index != -1) {
@@ -283,7 +195,6 @@ class CompetitionProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-
       return updatedCompetition;
     } catch (error) {
       _setError(error);
@@ -293,24 +204,15 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // DELETE COMPETITION
-  // ============================================================
-
-  Future<bool> deleteCompetition(
-      int competitionId,
-      ) async {
+  Future<bool> deleteCompetition(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
-      await _repository.deleteCompetition(
-        competitionId,
-      );
+      await _repository.deleteCompetition(competitionId);
 
       _competitions.removeWhere(
-            (competition) =>
-        competition.id == competitionId,
+            (competition) => competition.id == competitionId,
       );
 
       if (_selectedCompetition?.id == competitionId) {
@@ -334,22 +236,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // LOAD PRIZES
-  // ============================================================
-
-  Future<bool> loadPrizes(
-      int competitionId,
-      ) async {
+  Future<bool> loadPrizes(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _prizes =
-      await _repository.getCompetitionPrizes(
-        competitionId,
-      );
-
+      await _repository.getCompetitionPrizes(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -359,10 +252,6 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // CREATE PRIZE
-  // ============================================================
-
   Future<CompetitionPrizeModel?> createPrize(
       int competitionId,
       Map<String, dynamic> data,
@@ -371,14 +260,12 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final prize =
-      await _repository.createPrize(
+      final prize = await _repository.createPrize(
         competitionId,
         data,
       );
 
       _prizes.add(prize);
-
       return prize;
     } catch (error) {
       _setError(error);
@@ -387,10 +274,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // UPDATE PRIZE
-  // ============================================================
 
   Future<CompetitionPrizeModel?> updatePrize(
       int competitionId,
@@ -401,8 +284,7 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final updatedPrize =
-      await _repository.updatePrize(
+      final updatedPrize = await _repository.updatePrize(
         competitionId,
         prizeId,
         data,
@@ -417,7 +299,6 @@ class CompetitionProvider extends ChangeNotifier {
       }
 
       notifyListeners();
-
       return updatedPrize;
     } catch (error) {
       _setError(error);
@@ -427,10 +308,6 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // DELETE PRIZE
-  // ============================================================
-
   Future<bool> deletePrize(
       int competitionId,
       int prizeId,
@@ -439,15 +316,9 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      await _repository.deletePrize(
-        competitionId,
-        prizeId,
-      );
+      await _repository.deletePrize(competitionId, prizeId);
 
-      _prizes.removeWhere(
-            (prize) => prize.id == prizeId,
-      );
-
+      _prizes.removeWhere((prize) => prize.id == prizeId);
       return true;
     } catch (error) {
       _setError(error);
@@ -457,13 +328,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // LOAD REGISTRATIONS
-  // ============================================================
-
-  Future<bool> loadRegistrations(
-      int competitionId,
-      ) async {
+  Future<bool> loadRegistrations(int competitionId) async {
     _setLoading(true);
     _clearError();
 
@@ -472,7 +337,6 @@ class CompetitionProvider extends ChangeNotifier {
       await _repository.getCompetitionRegistrations(
         competitionId,
       );
-
       return true;
     } catch (error) {
       _setError(error);
@@ -482,12 +346,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // APPROVE REGISTRATION
-  // ============================================================
-
-  Future<CompetitionRegistrationModel?>
-  approveRegistration(
+  Future<CompetitionRegistrationModel?> approveRegistration(
       int competitionId,
       int registrationId,
       ) async {
@@ -501,10 +360,7 @@ class CompetitionProvider extends ChangeNotifier {
         registrationId,
       );
 
-      _updateRegistrationInList(
-        updatedRegistration,
-      );
-
+      _updateRegistrationInList(updatedRegistration);
       return updatedRegistration;
     } catch (error) {
       _setError(error);
@@ -514,12 +370,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // REJECT REGISTRATION
-  // ============================================================
-
-  Future<CompetitionRegistrationModel?>
-  rejectRegistration(
+  Future<CompetitionRegistrationModel?> rejectRegistration(
       int competitionId,
       int registrationId,
       ) async {
@@ -533,10 +384,7 @@ class CompetitionProvider extends ChangeNotifier {
         registrationId,
       );
 
-      _updateRegistrationInList(
-        updatedRegistration,
-      );
-
+      _updateRegistrationInList(updatedRegistration);
       return updatedRegistration;
     } catch (error) {
       _setError(error);
@@ -546,12 +394,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // MOVE REGISTRATION TO WAITLIST
-  // ============================================================
-
-  Future<CompetitionRegistrationModel?>
-  moveRegistrationToWaitlist(
+  Future<CompetitionRegistrationModel?> moveRegistrationToWaitlist(
       int competitionId,
       int registrationId,
       ) async {
@@ -565,10 +408,7 @@ class CompetitionProvider extends ChangeNotifier {
         registrationId,
       );
 
-      _updateRegistrationInList(
-        updatedRegistration,
-      );
-
+      _updateRegistrationInList(updatedRegistration);
       return updatedRegistration;
     } catch (error) {
       _setError(error);
@@ -577,10 +417,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // UPDATE REGISTRATION IN LOCAL LIST
-  // ============================================================
 
   void _updateRegistrationInList(
       CompetitionRegistrationModel registration,
@@ -598,13 +434,7 @@ class CompetitionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // LOAD INVITATIONS
-  // ============================================================
-
-  Future<bool> loadInvitations(
-      int competitionId,
-      ) async {
+  Future<bool> loadInvitations(int competitionId) async {
     _setLoading(true);
     _clearError();
 
@@ -613,7 +443,6 @@ class CompetitionProvider extends ChangeNotifier {
       await _repository.getCompetitionInvitations(
         competitionId,
       );
-
       return true;
     } catch (error) {
       _setError(error);
@@ -623,12 +452,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // SEND INVITATION
-  // ============================================================
-
-  Future<CompetitionInvitationModel?>
-  sendInvitation(
+  Future<CompetitionInvitationModel?> sendInvitation(
       int competitionId,
       Map<String, dynamic> data,
       ) async {
@@ -636,14 +460,12 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final invitation =
-      await _repository.sendInvitation(
+      final invitation = await _repository.sendInvitation(
         competitionId,
         data,
       );
 
       _invitations.insert(0, invitation);
-
       return invitation;
     } catch (error) {
       _setError(error);
@@ -653,66 +475,75 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // LOAD COMPETITION PAYMENTS
-  // ============================================================
-
   Future<bool> loadPayments() async {
+    final session = _paymentSessionVersion;
+    final request = ++_paymentRequestVersion;
+
     _setLoading(true);
     _clearError();
 
     try {
-      _payments =
-      await _repository.getCompetitionPayments();
+      final payments = await _repository.getCompetitionPayments();
 
+      if (session != _paymentSessionVersion ||
+          request != _paymentRequestVersion) {
+        return false;
+      }
+
+      _payments = payments;
       return true;
     } catch (error) {
-      _setError(error);
+      if (session == _paymentSessionVersion &&
+          request == _paymentRequestVersion) {
+        _setError(error);
+      }
+
       return false;
     } finally {
-      _setLoading(false);
+      if (session == _paymentSessionVersion &&
+          request == _paymentRequestVersion) {
+        _setLoading(false);
+      }
     }
   }
 
-  // ============================================================
-  // APPROVE COMPETITION PAYMENT
-  // ============================================================
-
-  Future<CompetitionPaymentModel?>
-  approveCompetitionPayment(
+  Future<CompetitionPaymentModel?> approveCompetitionPayment(
       int paymentId,
       ) async {
+    final session = _paymentSessionVersion;
+    _paymentRequestVersion++;
+
     _setLoading(true);
     _clearError();
 
     try {
       final updatedPayment =
-      await _repository.approveCompetitionPayment(
-        paymentId,
-      );
+      await _repository.approveCompetitionPayment(paymentId);
 
-      _updatePaymentInList(
-        updatedPayment,
-      );
+      if (session != _paymentSessionVersion) return null;
 
+      _updatePaymentInList(updatedPayment);
       return updatedPayment;
     } catch (error) {
-      _setError(error);
+      if (session == _paymentSessionVersion) {
+        _setError(error);
+      }
+
       return null;
     } finally {
-      _setLoading(false);
+      if (session == _paymentSessionVersion) {
+        _setLoading(false);
+      }
     }
   }
 
-  // ============================================================
-  // REJECT COMPETITION PAYMENT
-  // ============================================================
-
-  Future<CompetitionPaymentModel?>
-  rejectCompetitionPayment(
+  Future<CompetitionPaymentModel?> rejectCompetitionPayment(
       int paymentId, {
         String? rejectionReason,
       }) async {
+    final session = _paymentSessionVersion;
+    _paymentRequestVersion++;
+
     _setLoading(true);
     _clearError();
 
@@ -723,26 +554,24 @@ class CompetitionProvider extends ChangeNotifier {
         rejectionReason: rejectionReason,
       );
 
-      _updatePaymentInList(
-        updatedPayment,
-      );
+      if (session != _paymentSessionVersion) return null;
 
+      _updatePaymentInList(updatedPayment);
       return updatedPayment;
     } catch (error) {
-      _setError(error);
+      if (session == _paymentSessionVersion) {
+        _setError(error);
+      }
+
       return null;
     } finally {
-      _setLoading(false);
+      if (session == _paymentSessionVersion) {
+        _setLoading(false);
+      }
     }
   }
 
-  // ============================================================
-  // UPDATE PAYMENT IN LOCAL LIST
-  // ============================================================
-
-  void _updatePaymentInList(
-      CompetitionPaymentModel payment,
-      ) {
+  void _updatePaymentInList(CompetitionPaymentModel payment) {
     final index = _payments.indexWhere(
           (item) => item.id == payment.id,
     );
@@ -756,22 +585,13 @@ class CompetitionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // SEEDING
-  // ============================================================
-
-  Future<bool> loadSeeding(
-      int competitionId,
-      ) async {
+  Future<bool> loadSeeding(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _seeding =
-      await _repository.getCompetitionSeeding(
-        competitionId,
-      );
-
+      await _repository.getCompetitionSeeding(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -781,18 +601,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> generateSeeding(
-      int competitionId,
-      ) async {
+  Future<bool> generateSeeding(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _seeding =
-      await _repository.generateSeeding(
-        competitionId,
-      );
-
+      await _repository.generateSeeding(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -810,12 +625,10 @@ class CompetitionProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      _seeding =
-      await _repository.updateManualSeeding(
+      _seeding = await _repository.updateManualSeeding(
         competitionId,
         seeding,
       );
-
       return true;
     } catch (error) {
       _setError(error);
@@ -825,18 +638,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> confirmSeeding(
-      int competitionId,
-      ) async {
+  Future<bool> confirmSeeding(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _seeding =
-      await _repository.confirmSeeding(
-        competitionId,
-      );
-
+      await _repository.confirmSeeding(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -846,22 +654,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // GENERATE TOURNAMENT
-  // ============================================================
-
-  Future<bool> generateTournament(
-      int competitionId,
-      ) async {
+  Future<bool> generateTournament(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _matches =
-      await _repository.generateTournament(
-        competitionId,
-      );
-
+      await _repository.generateTournament(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -871,22 +670,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // MATCHES
-  // ============================================================
-
-  Future<bool> loadMatches(
-      int competitionId,
-      ) async {
+  Future<bool> loadMatches(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _matches =
-      await _repository.getCompetitionMatches(
-        competitionId,
-      );
-
+      await _repository.getCompetitionMatches(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -909,7 +699,6 @@ class CompetitionProvider extends ChangeNotifier {
         competitionId,
         matchId,
       );
-
       return true;
     } catch (error) {
       _setError(error);
@@ -919,8 +708,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  Future<CompetitionMatchModel?>
-  updateMatch(
+  Future<CompetitionMatchModel?> updateMatch(
       int competitionId,
       int matchId,
       Map<String, dynamic> data,
@@ -937,7 +725,6 @@ class CompetitionProvider extends ChangeNotifier {
       );
 
       _updateMatchInList(updatedMatch);
-
       return updatedMatch;
     } catch (error) {
       _setError(error);
@@ -947,8 +734,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  Future<CompetitionMatchModel?>
-  cancelMatch(
+  Future<CompetitionMatchModel?> cancelMatch(
       int competitionId,
       int matchId,
       ) async {
@@ -963,7 +749,6 @@ class CompetitionProvider extends ChangeNotifier {
       );
 
       _updateMatchInList(updatedMatch);
-
       return updatedMatch;
     } catch (error) {
       _setError(error);
@@ -973,9 +758,7 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  void _updateMatchInList(
-      CompetitionMatchModel match,
-      ) {
+  void _updateMatchInList(CompetitionMatchModel match) {
     final index = _matches.indexWhere(
           (item) => item.id == match.id,
     );
@@ -987,16 +770,10 @@ class CompetitionProvider extends ChangeNotifier {
     }
 
     _selectedMatch = match;
-
     notifyListeners();
   }
 
-  // ============================================================
-  // MATCH RESULTS
-  // ============================================================
-
-  Future<CompetitionMatchModel?>
-  submitMatchResult(
+  Future<CompetitionMatchModel?> submitMatchResult(
       int competitionId,
       int matchId,
       Map<String, dynamic> data,
@@ -1013,7 +790,6 @@ class CompetitionProvider extends ChangeNotifier {
       );
 
       _updateMatchInList(updatedMatch);
-
       return updatedMatch;
     } catch (error) {
       _setError(error);
@@ -1023,22 +799,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // STANDINGS
-  // ============================================================
-
-  Future<bool> loadStandings(
-      int competitionId,
-      ) async {
+  Future<bool> loadStandings(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _standings =
-      await _repository.getCompetitionStandings(
-        competitionId,
-      );
-
+      await _repository.getCompetitionStandings(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -1048,22 +815,13 @@ class CompetitionProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // BRACKET
-  // ============================================================
-
-  Future<bool> loadBracket(
-      int competitionId,
-      ) async {
+  Future<bool> loadBracket(int competitionId) async {
     _setLoading(true);
     _clearError();
 
     try {
       _bracket =
-      await _repository.getCompetitionBracket(
-        competitionId,
-      );
-
+      await _repository.getCompetitionBracket(competitionId);
       return true;
     } catch (error) {
       _setError(error);
@@ -1072,10 +830,6 @@ class CompetitionProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // ============================================================
-  // CLEAR SELECTED COMPETITION
-  // ============================================================
 
   void clearSelectedCompetition() {
     _selectedCompetition = null;
@@ -1092,45 +846,25 @@ class CompetitionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // CLEAR REGISTRATIONS
-  // ============================================================
-
   void clearRegistrations() {
     _registrations = [];
     notifyListeners();
   }
-
-  // ============================================================
-  // CLEAR INVITATIONS
-  // ============================================================
 
   void clearInvitations() {
     _invitations = [];
     notifyListeners();
   }
 
-  // ============================================================
-  // CLEAR PAYMENTS
-  // ============================================================
-
   void clearPayments() {
     _payments = [];
     notifyListeners();
   }
 
-  // ============================================================
-  // CLEAR SEEDING
-  // ============================================================
-
   void clearSeeding() {
     _seeding = [];
     notifyListeners();
   }
-
-  // ============================================================
-  // CLEAR MATCHES
-  // ============================================================
 
   void clearMatches() {
     _matches = [];
@@ -1138,40 +872,29 @@ class CompetitionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // CLEAR STANDINGS
-  // ============================================================
-
   void clearStandings() {
     _standings = [];
     notifyListeners();
   }
-
-  // ============================================================
-  // CLEAR BRACKET
-  // ============================================================
 
   void clearBracket() {
     _bracket = null;
     notifyListeners();
   }
 
-  // ============================================================
-  // RESET
-  // ============================================================
-
   void reset() {
+    _paymentSessionVersion++;
+    _paymentRequestVersion++;
+
     _isLoading = false;
     _errorMessage = null;
 
     _competitions = [];
     _selectedCompetition = null;
-
     _prizes = [];
     _registrations = [];
     _invitations = [];
     _payments = [];
-
     _seeding = [];
     _matches = [];
     _selectedMatch = null;

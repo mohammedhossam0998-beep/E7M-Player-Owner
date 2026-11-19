@@ -1,4 +1,6 @@
+
 import 'package:e7m/core/network/api_client.dart';
+
 class SlotService {
   final ApiClient _apiClient;
 
@@ -48,17 +50,14 @@ class SlotService {
       );
     }
 
-    return Map<String, dynamic>.from(
-      slot,
-    );
+    return Map<String, dynamic>.from(slot);
   }
 
   // ============================================================
   // GET PITCH SLOTS
   // ============================================================
 
-  Future<List<Map<String, dynamic>>>
-  getPitchSlots(
+  Future<List<Map<String, dynamic>>> getPitchSlots(
       int pitchId,
       ) async {
     final response = await _apiClient.get(
@@ -81,17 +80,19 @@ class SlotService {
     final slots = response['slots'];
 
     if (slots is! List) {
-      return [];
+      throw Exception(
+        'Invalid slots list returned from server',
+      );
     }
 
-    return slots
-        .whereType<Map>()
-        .map(
-          (slot) =>
-      Map<String, dynamic>.from(
-        slot,
-      ),
-    )
-        .toList();
+    return slots.map<Map<String, dynamic>>((slot) {
+      if (slot is! Map) {
+        throw Exception(
+          'Invalid slot data returned from server',
+        );
+      }
+
+      return Map<String, dynamic>.from(slot);
+    }).toList();
   }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:e7m/core/network/api_client.dart';
 import '../../data/models/stadium.dart';
 import '../../data/models/stadium_image.dart';
 import '../providers/stadium_provider.dart';
@@ -226,7 +227,6 @@ class _DetailsContent extends StatelessWidget {
                   _HeroImage(
                     image: stadium.primaryImage,
                   ),
-
                   Positioned(
                     top: 16,
                     left: 16,
@@ -239,7 +239,6 @@ class _DetailsContent extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   if (images.isNotEmpty)
                     Positioned(
                       right: 16,
@@ -280,7 +279,6 @@ class _DetailsContent extends StatelessWidget {
             ),
           ),
         ),
-
         SliverPadding(
           padding: const EdgeInsets.all(20),
           sliver: SliverList(
@@ -293,9 +291,7 @@ class _DetailsContent extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 if (stadium.cityName != null ||
                     stadium.address != null)
                   Row(
@@ -320,19 +316,14 @@ class _DetailsContent extends StatelessWidget {
                       ),
                     ],
                   ),
-
                 const SizedBox(height: 22),
-
                 _MainInfoCard(
                   stadium: stadium,
                 ),
-
                 const SizedBox(height: 22),
-
                 _StadiumLocationSection(
                   stadium: stadium,
                 ),
-
                 if (stadium.description != null &&
                     stadium.description!.trim().isNotEmpty) ...[
                   const SizedBox(height: 22),
@@ -353,9 +344,7 @@ class _DetailsContent extends StatelessWidget {
                     ),
                   ),
                 ],
-
                 const SizedBox(height: 28),
-
                 _StadiumReviewsPreview(
                   pitchId: stadium.id,
                   pitchName: stadium.name,
@@ -365,13 +354,10 @@ class _DetailsContent extends StatelessWidget {
                   isLoading: isLoadingReviews,
                   errorMessage: reviewError,
                 ),
-
                 const SizedBox(height: 28),
-
                 _StadiumSlotsSection(
                   stadium: stadium,
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -395,10 +381,7 @@ class _HeroImage extends StatelessWidget {
       return _placeholder();
     }
 
-    final imageUrl = image!.startsWith('http://') ||
-        image!.startsWith('https://')
-        ? image!
-        : 'http://172.16.25.24:5000$image';
+    final imageUrl = ApiClient.resolveMediaUrl(image!);
 
     return Image.network(
       imageUrl,
@@ -584,9 +567,7 @@ class _StadiumLocationSection extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-
         const SizedBox(height: 12),
-
         if (!_hasCoordinates)
           _LocationUnavailable(
             address: stadium.address ?? stadium.cityName,
@@ -682,7 +663,6 @@ class _LocationMap extends StatelessWidget {
               ],
             ),
           ),
-
           Material(
             color: Theme.of(context).cardColor,
             child: InkWell(
@@ -698,9 +678,7 @@ class _LocationMap extends StatelessWidget {
                       Icons.location_on_outlined,
                       color: primaryGreen,
                     ),
-
                     const SizedBox(width: 10),
-
                     Expanded(
                       child: Text(
                         'Open location in Google Maps',
@@ -710,7 +688,6 @@ class _LocationMap extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const Icon(
                       Icons.open_in_new,
                       size: 19,
@@ -762,9 +739,7 @@ class _LocationUnavailable extends StatelessWidget {
               color: primaryGreen,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -776,9 +751,7 @@ class _LocationUnavailable extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   address?.trim().isNotEmpty == true
                       ? address!
@@ -902,9 +875,7 @@ class _StadiumReviewsPreview extends StatelessWidget {
               ),
           ],
         ),
-
         const SizedBox(height: 10),
-
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -932,9 +903,7 @@ class _StadiumReviewsPreview extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -954,23 +923,21 @@ class _StadiumReviewsPreview extends StatelessWidget {
                   ),
                 ],
               ),
-
               if (reviews.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 14),
-
                 ...reviews
                     .take(2)
                     .map(
                       (review) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding:
+                    const EdgeInsets.only(bottom: 12),
                     child: _PreviewReviewItem(
                       review: review,
                     ),
                   ),
                 ),
-
                 if (totalReviews > 2)
                   Center(
                     child: TextButton(
@@ -1043,9 +1010,7 @@ class _PreviewReviewItem extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1058,14 +1023,11 @@ class _PreviewReviewItem extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-
               const SizedBox(height: 3),
-
               _PreviewStars(
                 rating: review.rating.toDouble(),
                 size: 15,
               ),
-
               if (review.comment != null &&
                   review.comment!.trim().isNotEmpty) ...[
                 const SizedBox(height: 5),
@@ -1287,9 +1249,7 @@ class _StadiumSlotsSectionState
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 12),
-
             SizedBox(
               height: 72,
               child: ListView.separated(
@@ -1320,8 +1280,7 @@ class _StadiumSlotsSectionState
                       decoration: BoxDecoration(
                         color: selected
                             ? const Color(0xFF7CC000)
-                            : Theme.of(context)
-                            .cardColor,
+                            : Theme.of(context).cardColor,
                         borderRadius:
                         BorderRadius.circular(16),
                         border: Border.all(
@@ -1362,9 +1321,7 @@ class _StadiumSlotsSectionState
                 },
               ),
             ),
-
             const SizedBox(height: 22),
-
             Row(
               children: [
                 const Text(
@@ -1384,9 +1341,7 @@ class _StadiumSlotsSectionState
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
             ...filteredSlots
                 .map(
                   (slot) => _SlotCard(
@@ -1398,16 +1353,20 @@ class _StadiumSlotsSectionState
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => StadiumBookingScreen(
-                        stadiumId: widget.stadium.id,
-                        stadiumName: widget.stadium.name,
-                        slotId: slot.id,
-                        date: slot.slotDate,
-                        startTime: slot.startTime,
-                        endTime: slot.endTime,
-                        price: slot.price,
-                        deposit: widget.stadium.depositAmount,
-                      ),
+                      builder: (_) =>
+                          StadiumBookingScreen(
+                            stadiumId:
+                            widget.stadium.id,
+                            stadiumName:
+                            widget.stadium.name,
+                            slotId: slot.id,
+                            date: slot.slotDate,
+                            startTime: slot.startTime,
+                            endTime: slot.endTime,
+                            price: slot.price,
+                            deposit: widget
+                                .stadium.depositAmount,
+                          ),
                     ),
                   );
                 }

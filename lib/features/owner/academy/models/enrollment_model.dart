@@ -1,6 +1,8 @@
+
 class EnrollmentModel {
   final int enrollmentId;
   final int academyId;
+
   final String? academyName;
   final String? academyStatus;
 
@@ -56,32 +58,35 @@ class EnrollmentModel {
         json['academy_id'],
       ),
 
-      academyName:
-      json['academy_name']?.toString(),
+      academyName: _toStringOrNull(
+        json['academy_name'],
+      ),
 
-      academyStatus:
-      json['academy_status']?.toString(),
+      academyStatus: _toStringOrNull(
+        json['academy_status'],
+      ),
 
       programId: _toNullableInt(
         json['program_id'],
       ),
 
-      programName:
-      json['program_name']?.toString(),
+      programName: _toStringOrNull(
+        json['program_name'],
+      ),
 
-      programDescription:
-      json['program_description']?.toString(),
+      programDescription: _toStringOrNull(
+        json['program_description'],
+      ),
 
-      programLevel:
-      json['program_level']?.toString(),
+      programLevel: _toStringOrNull(
+        json['program_level'],
+      ),
 
-      programPrice:
-      _toDouble(
+      programPrice: _toNullableDouble(
         json['program_price'],
       ),
 
-      programDurationWeeks:
-      _toNullableInt(
+      programDurationWeeks: _toNullableInt(
         json['program_duration_weeks'] ??
             json['duration_weeks'],
       ),
@@ -90,23 +95,32 @@ class EnrollmentModel {
         json['player_id'],
       ),
 
-      playerName:
-      json['player_name']?.toString(),
+      // The list API returns full_name,
+      // while some API responses use player_name.
+      playerName: _toStringOrNull(
+        json['player_name'] ??
+            json['full_name'],
+      ),
 
-      playerEmail:
-      json['player_email']?.toString(),
+      playerEmail: _toStringOrNull(
+        json['player_email'] ??
+            json['email'],
+      ),
 
-      playerPhone:
-      json['player_phone']?.toString(),
+      playerPhone: _toStringOrNull(
+        json['player_phone'] ??
+            json['phone'],
+      ),
 
-      profileImage:
-      json['profile_image']?.toString(),
+      profileImage: _toStringOrNull(
+        json['profile_image'] ??
+            json['player_profile_image'],
+      ),
 
       status:
-      json['status']?.toString() ?? '',
+      json['status']?.toString() ?? 'pending',
 
-      enrolledAt:
-      _toDateTime(
+      enrolledAt: _toDateTime(
         json['enrolled_at'],
       ),
     );
@@ -125,12 +139,10 @@ class EnrollmentModel {
 
       'program_id': programId,
       'program_name': programName,
-      'program_description':
-      programDescription,
+      'program_description': programDescription,
       'program_level': programLevel,
       'program_price': programPrice,
-      'program_duration_weeks':
-      programDurationWeeks,
+      'program_duration_weeks': programDurationWeeks,
 
       'player_id': playerId,
       'player_name': playerName,
@@ -224,7 +236,7 @@ class EnrollmentModel {
   }
 
   // ============================================================
-  // HELPERS
+  // HELPER: INTEGER
   // ============================================================
 
   static int _toInt(dynamic value) {
@@ -242,9 +254,11 @@ class EnrollmentModel {
         0;
   }
 
-  static int? _toNullableInt(
-      dynamic value,
-      ) {
+  // ============================================================
+  // HELPER: NULLABLE INTEGER
+  // ============================================================
+
+  static int? _toNullableInt(dynamic value) {
     if (value == null) {
       return null;
     }
@@ -262,7 +276,11 @@ class EnrollmentModel {
     );
   }
 
-  static double? _toDouble(
+  // ============================================================
+  // HELPER: DOUBLE
+  // ============================================================
+
+  static double? _toNullableDouble(
       dynamic value,
       ) {
     if (value == null) {
@@ -281,6 +299,30 @@ class EnrollmentModel {
       value.toString(),
     );
   }
+
+  // ============================================================
+  // HELPER: STRING
+  // ============================================================
+
+  static String? _toStringOrNull(
+      dynamic value,
+      ) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return text;
+  }
+
+  // ============================================================
+  // HELPER: DATETIME
+  // ============================================================
 
   static DateTime? _toDateTime(
       dynamic value,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:e7m/shared/localization/language_provider.dart';
 
 import '../providers/stadium_provider.dart';
 import '../widgets/stadium_booking_summary.dart';
@@ -76,7 +77,10 @@ class _StadiumBookingScreenState
   // FORMAT TIME
   // ============================================================
 
-  String _formatTime(String time) {
+  String _formatTime(
+      String time, {
+        required bool isArabic,
+      }) {
     final parts = time.split(':');
 
     if (parts.length < 2) {
@@ -91,7 +95,9 @@ class _StadiumBookingScreenState
 
     final minute = parts[1];
 
-    final suffix = hour >= 12 ? 'PM' : 'AM';
+    final suffix = isArabic
+        ? (hour >= 12 ? 'م' : 'ص')
+        : (hour >= 12 ? 'PM' : 'AM');
 
     final displayHour =
     hour % 12 == 0 ? 12 : hour % 12;
@@ -105,6 +111,11 @@ class _StadiumBookingScreenState
 
   Future<void> _confirmBooking() async {
     final provider = context.read<StadiumProvider>();
+    final isArabic = context
+        .read<LanguageProvider>()
+        .locale
+        .languageCode ==
+        'ar';
 
     final booking = await provider.createBooking(
       pitchSlotId: widget.slotId,
@@ -121,7 +132,9 @@ class _StadiumBookingScreenState
     if (booking == null) {
       final message =
           provider.errorMessage ??
-              'Booking could not be created';
+              (isArabic
+                  ? 'تعذر إنشاء الحجز'
+                  : 'Booking could not be created');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -150,26 +163,28 @@ class _StadiumBookingScreenState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.check_circle,
                 color: primaryGreen,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Booking Created',
-                  style: TextStyle(
+                  isArabic ? 'تم إنشاء الحجز' : 'Booking Created',
+                  style: const TextStyle(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          content: const Text(
-            'Your booking has been created successfully. You can continue to payment now.',
-            style: TextStyle(
+          content: Text(
+            isArabic
+                ? 'تم إنشاء الحجز بنجاح. يمكنك المتابعة إلى الدفع الآن.'
+                : 'Your booking has been created successfully. You can continue to payment now.',
+            style: const TextStyle(
               height: 1.5,
             ),
           ),
@@ -178,9 +193,9 @@ class _StadiumBookingScreenState
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                'Continue',
-                style: TextStyle(
+              child: Text(
+                isArabic ? 'متابعة' : 'Continue',
+                style: const TextStyle(
                   color: primaryGreen,
                   fontWeight: FontWeight.w700,
                 ),
@@ -215,6 +230,12 @@ class _StadiumBookingScreenState
     final remaining =
         widget.price - widget.deposit;
 
+    final isArabic = context
+        .watch<LanguageProvider>()
+        .locale
+        .languageCode ==
+        'ar';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F3),
 
@@ -226,9 +247,9 @@ class _StadiumBookingScreenState
         backgroundColor: const Color(0xFFF7F7F3),
         elevation: 0,
         foregroundColor: darkNavy,
-        title: const Text(
-          'Confirm Booking',
-          style: TextStyle(
+        title: Text(
+          isArabic ? 'تأكيد الحجز' : 'Confirm Booking',
+          style: const TextStyle(
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -251,13 +272,11 @@ class _StadiumBookingScreenState
                 // ==================================================
 
                 StadiumBookingSummary(
-                  stadiumName:
-                  widget.stadiumName,
-                  date:
-                  _formatDate(widget.date),
+                  stadiumName: widget.stadiumName,
+                  date: _formatDate(widget.date),
                   time:
-                  '${_formatTime(widget.startTime)} - '
-                      '${_formatTime(widget.endTime)}',
+                  '${_formatTime(widget.startTime, isArabic: isArabic)} - '
+                      '${_formatTime(widget.endTime, isArabic: isArabic)}',
                   price: widget.price,
                   deposit: widget.deposit,
                   remaining: remaining,
@@ -269,9 +288,9 @@ class _StadiumBookingScreenState
                 // PAYMENT METHOD (ONLINE ONLY)
                 // ==================================================
 
-                const Text(
-                  'Payment Method',
-                  style: TextStyle(
+                Text(
+                  isArabic ? 'طريقة الدفع' : 'Payment Method',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: darkNavy,
@@ -280,8 +299,8 @@ class _StadiumBookingScreenState
 
                 const SizedBox(height: 12),
 
-                const _PaymentOption(
-                  title: 'Online',
+                _PaymentOption(
+                  title: isArabic ? 'دفع إلكتروني' : 'Online',
                   icon: Icons.language,
                 ),
 
@@ -291,9 +310,9 @@ class _StadiumBookingScreenState
                 // NOTES
                 // ==================================================
 
-                const Text(
-                  'Notes',
-                  style: TextStyle(
+                Text(
+                  isArabic ? 'ملاحظات' : 'Notes',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: darkNavy,
@@ -308,8 +327,9 @@ class _StadiumBookingScreenState
                   textInputAction:
                   TextInputAction.newline,
                   decoration: InputDecoration(
-                    hintText:
-                    'Add a note (optional)',
+                    hintText: isArabic
+                        ? 'أضف ملاحظة (اختياري)'
+                        : 'Add a note (optional)',
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding:
@@ -377,13 +397,14 @@ class _StadiumBookingScreenState
                       child:
                       CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color:
-                        Colors.black,
+                        color: Colors.black,
                       ),
                     )
-                        : const Text(
-                      'Confirm Booking',
-                      style: TextStyle(
+                        : Text(
+                      isArabic
+                          ? 'تأكيد الحجز'
+                          : 'Confirm Booking',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight:
                         FontWeight.w900,
@@ -432,14 +453,12 @@ class _PaymentOption extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFF7CC000),
+          const Icon(
+            Icons.language,
+            color: Color(0xFF7CC000),
             size: 25,
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Text(
               title,
@@ -449,7 +468,6 @@ class _PaymentOption extends StatelessWidget {
               ),
             ),
           ),
-
           Container(
             width: 22,
             height: 22,

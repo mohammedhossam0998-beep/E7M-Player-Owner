@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:e7m/core/network/api_client.dart';
 import 'package:e7m/shared/localization/language_provider.dart';
 import 'package:e7m/features/player/stadium/presentation/providers/stadium_provider.dart';
 import 'package:e7m/features/player/stadium/presentation/screens/stadium_details_screen.dart';
@@ -117,7 +118,6 @@ class _AllStadiumsScreenState extends State<AllStadiumsScreen> {
                     ),
                   ),
                 ),
-
                 if (stadiums.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -284,9 +284,7 @@ class _StadiumCard extends StatelessWidget {
                 _StadiumImage(
                   image: image,
                 ),
-
                 const SizedBox(width: 13),
-
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -313,9 +311,7 @@ class _StadiumCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-
                             const SizedBox(width: 6),
-
                             const Icon(
                               Icons.arrow_forward_ios,
                               size: 15,
@@ -323,9 +319,7 @@ class _StadiumCard extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 7),
-
                         if (stadium.cityName != null ||
                             stadium.address != null)
                           Row(
@@ -355,9 +349,7 @@ class _StadiumCard extends StatelessWidget {
                               ),
                             ],
                           ),
-
                         const SizedBox(height: 9),
-
                         Row(
                           children: [
                             if (stadium.pitchType != null)
@@ -367,7 +359,6 @@ class _StadiumCard extends StatelessWidget {
                                 text:
                                 stadium.pitchType!,
                               ),
-
                             if (stadium.capacity != null) ...[
                               const SizedBox(width: 6),
                               _SmallTag(
@@ -379,9 +370,7 @@ class _StadiumCard extends StatelessWidget {
                             ],
                           ],
                         ),
-
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             Text(
@@ -465,12 +454,7 @@ class _StadiumImage extends StatelessWidget {
   }
 
   String _imageUrl(String image) {
-    if (image.startsWith('http://') ||
-        image.startsWith('https://')) {
-      return image;
-    }
-
-    return 'http://172.16.25.24:5000image';
+    return ApiClient.resolveMediaUrl(image);
   }
 
   Widget _placeholder() {

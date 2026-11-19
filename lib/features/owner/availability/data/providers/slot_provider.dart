@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 
 import '../models/slot_model.dart';
@@ -10,28 +11,32 @@ class SlotProvider extends ChangeNotifier {
     SlotService? service,
   }) : _service = service ?? SlotService();
 
-  // ============================================================
-  // STATE
-  // ============================================================
-
   List<SlotModel> _slots = [];
+
+  int? _stadiumId;
+  String? _errorMessage;
 
   bool _isLoading = false;
   bool _isCreating = false;
   bool _isUpdating = false;
   bool _isDeleting = false;
   bool _isUpdatingStatus = false;
+  bool _disposed = false;
 
-  String? _errorMessage;
-
-  int? _stadiumId;
+  int _sessionVersion = 0;
+  int _requestVersion = 0;
 
   // ============================================================
   // GETTERS
   // ============================================================
 
-  List<SlotModel> get slots =>
-      List.unmodifiable(_slots);
+  List<SlotModel> get slots => List.unmodifiable(_slots);
+
+  int? get stadiumId => _stadiumId;
+
+  String? get errorMessage => _errorMessage;
+
+  bool get hasError => _errorMessage != null;
 
   bool get isLoading => _isLoading;
 
@@ -43,41 +48,102 @@ class SlotProvider extends ChangeNotifier {
 
   bool get isUpdatingStatus => _isUpdatingStatus;
 
-  bool get hasError =>
-      _errorMessage != null;
-
-  String? get errorMessage =>
-      _errorMessage;
-
-  int? get stadiumId =>
-      _stadiumId;
+  bool get isBusy =>
+      _isCreating ||
+          _isUpdating ||
+          _isDeleting ||
+          _isUpdatingStatus;
 
   // ============================================================
-  // GET STADIUM SLOTS
+  // SAFE NOTIFICATION
   // ============================================================
 
-  Future<void> fetchStadiumSlots(
-      int stadiumId,
-      ) async {
-    _stadiumId = stadiumId;
+  void _notify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  // ============================================================
+  // SWITCH STADIUM SAFELY
+  // ============================================================
+
+  void _activateStadium(int id) {
+    if (_stadiumId == id) return;
+
+    _stadiumId = id;
+
+    ++_sessionVersion;
+    ++_requestVersion;
+
+    _slots = [];
+
+    _isLoading = false;
+    _isCreating = false;
+    _isUpdating = false;
+    _isDeleting = false;
+    _isUpdatingStatus = false;
+
+    _errorMessage = null;
+  }
+
+  void _invalidateLoading() {
+    ++_requestVersion;
+    _isLoading = false;
+  }
+
+  // ============================================================
+  // FETCH STADIUM SLOTS
+  // ============================================================
+
+  Future<void> fetchStadiumSlots(int stadiumId) async {
+    if (_disposed) return;
+
+    _activateStadium(stadiumId);
+
+    if (isBusy) {
+      _errorMessage =
+      'Finish the current action before refreshing.';
+      _notify();
+      return;
+    }
+
+    final session = _sessionVersion;
+    final request = ++_requestVersion;
 
     _isLoading = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      _slots = await _service.getStadiumSlots(
-        stadiumId,
-      );
+      final items =
+      await _service.getStadiumSlots(stadiumId);
+
+      if (_disposed ||
+          session != _sessionVersion ||
+          request != _requestVersion) {
+        return;
+      }
+
+      _slots = items;
 
       _sortSlots();
-    } catch (e) {
-      _errorMessage = _cleanError(e);
-    } finally {
-      _isLoading = false;
+    } catch (error) {
+      if (_disposed ||
+          session != _sessionVersion ||
+          request != _requestVersion) {
+        return;
+      }
 
-      notifyListeners();
+      _errorMessage = _cleanError(error);
+    } finally {
+      if (!_disposed &&
+          session == _sessionVersion &&
+          request == _requestVersion) {
+        _isLoading = false;
+        _notify();
+      }
     }
   }
 
@@ -89,33 +155,43 @@ class SlotProvider extends ChangeNotifier {
       int stadiumId,
       SlotModel slot,
       ) async {
+    if (_disposed) return null;
+
+    _activateStadium(stadiumId);
+
+    if (isBusy) return null;
+
+    final session = _sessionVersion;
+
+    _invalidateLoading();
+
     _isCreating = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      final createdSlot =
-      await _service.createSlot(
-        stadiumId,
-        slot,
-      );
+      final created =
+      await _service.createSlot(stadiumId, slot);
 
-      _stadiumId = stadiumId;
+      if (_disposed || session != _sessionVersion) {
+        return null;
+      }
 
-      _slots.add(createdSlot);
+      _upsert(created);
 
-      _sortSlots();
-
-      return createdSlot;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+      return created;
+    } catch (error) {
+      if (!_disposed && session == _sessionVersion) {
+        _errorMessage = _cleanError(error);
+      }
 
       return null;
     } finally {
-      _isCreating = false;
-
-      notifyListeners();
+      if (!_disposed && session == _sessionVersion) {
+        _isCreating = false;
+        _notify();
+      }
     }
   }
 
@@ -128,40 +204,46 @@ class SlotProvider extends ChangeNotifier {
       int slotId,
       SlotModel slot,
       ) async {
+    if (_disposed) return null;
+
+    _activateStadium(stadiumId);
+
+    if (isBusy) return null;
+
+    final session = _sessionVersion;
+
+    _invalidateLoading();
+
     _isUpdating = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      final updatedSlot =
-      await _service.updateSlot(
+      final updated = await _service.updateSlot(
         stadiumId,
         slotId,
         slot,
       );
 
-      final index = _slots.indexWhere(
-            (item) => item.id == slotId,
-      );
-
-      if (index != -1) {
-        _slots[index] = updatedSlot;
-      } else {
-        _slots.add(updatedSlot);
+      if (_disposed || session != _sessionVersion) {
+        return null;
       }
 
-      _sortSlots();
+      _upsert(updated);
 
-      return updatedSlot;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+      return updated;
+    } catch (error) {
+      if (!_disposed && session == _sessionVersion) {
+        _errorMessage = _cleanError(error);
+      }
 
       return null;
     } finally {
-      _isUpdating = false;
-
-      notifyListeners();
+      if (!_disposed && session == _sessionVersion) {
+        _isUpdating = false;
+        _notify();
+      }
     }
   }
 
@@ -173,30 +255,44 @@ class SlotProvider extends ChangeNotifier {
       int stadiumId,
       int slotId,
       ) async {
+    if (_disposed) return false;
+
+    _activateStadium(stadiumId);
+
+    if (isBusy) return false;
+
+    final session = _sessionVersion;
+
+    _invalidateLoading();
+
     _isDeleting = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      await _service.deleteSlot(
-        stadiumId,
-        slotId,
-      );
+      await _service.deleteSlot(stadiumId, slotId);
+
+      if (_disposed || session != _sessionVersion) {
+        return false;
+      }
 
       _slots.removeWhere(
             (slot) => slot.id == slotId,
       );
 
       return true;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (!_disposed && session == _sessionVersion) {
+        _errorMessage = _cleanError(error);
+      }
 
       return false;
     } finally {
-      _isDeleting = false;
-
-      notifyListeners();
+      if (!_disposed && session == _sessionVersion) {
+        _isDeleting = false;
+        _notify();
+      }
     }
   }
 
@@ -209,63 +305,69 @@ class SlotProvider extends ChangeNotifier {
       int slotId,
       String status,
       ) async {
+    if (_disposed) return null;
+
+    _activateStadium(stadiumId);
+
+    if (isBusy) return null;
+
+    final session = _sessionVersion;
+
+    _invalidateLoading();
+
     _isUpdatingStatus = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      final updatedSlot =
+      final updated =
       await _service.updateSlotStatus(
         stadiumId,
         slotId,
         status,
       );
 
-      final index = _slots.indexWhere(
-            (slot) => slot.id == slotId,
-      );
-
-      if (index != -1) {
-        _slots[index] = updatedSlot;
-      } else {
-        _slots.add(updatedSlot);
+      if (_disposed || session != _sessionVersion) {
+        return null;
       }
 
-      _sortSlots();
+      _upsert(updated);
 
-      return updatedSlot;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+      return updated;
+    } catch (error) {
+      if (!_disposed && session == _sessionVersion) {
+        _errorMessage = _cleanError(error);
+      }
 
       return null;
     } finally {
-      _isUpdatingStatus = false;
-
-      notifyListeners();
+      if (!_disposed && session == _sessionVersion) {
+        _isUpdatingStatus = false;
+        _notify();
+      }
     }
   }
 
   // ============================================================
-  // CLEAR SLOTS
+  // INSERT OR UPDATE SLOT LOCALLY
   // ============================================================
 
-  void clearSlots() {
-    _slots = [];
-    _stadiumId = null;
-    _errorMessage = null;
+  void _upsert(SlotModel slot) {
+    if (slot.pitchId != _stadiumId) return;
 
-    notifyListeners();
-  }
+    final index = _slots.indexWhere(
+          (item) => item.id == slot.id,
+    );
 
-  // ============================================================
-  // CLEAR ERROR
-  // ============================================================
+    if (index >= 0) {
+      _slots[index] = slot;
+    } else {
+      _slots.add(slot);
+    }
 
-  void clearError() {
-    _errorMessage = null;
-
-    notifyListeners();
+    _sortSlots();
+    _notify();
   }
 
   // ============================================================
@@ -273,39 +375,74 @@ class SlotProvider extends ChangeNotifier {
   // ============================================================
 
   void _sortSlots() {
-    _slots.sort(
-          (a, b) {
-        final dateCompare =
-        a.slotDate.compareTo(
-          b.slotDate,
-        );
+    _slots.sort((a, b) {
+      final dateOrder =
+      a.slotDate.compareTo(b.slotDate);
 
-        if (dateCompare != 0) {
-          return dateCompare;
-        }
-
-        return a.startTime.compareTo(
-          b.startTime,
-        );
-      },
-    );
+      return dateOrder != 0
+          ? dateOrder
+          : a.startTime.compareTo(b.startTime);
+    });
   }
 
   // ============================================================
-  // CLEAN ERROR
+  // CLEAR STADIUM SLOTS
+  // ============================================================
+
+  void clearSlots() {
+    if (_disposed) return;
+
+    ++_sessionVersion;
+    ++_requestVersion;
+
+    _stadiumId = null;
+    _slots = [];
+
+    _isLoading = false;
+    _isCreating = false;
+    _isUpdating = false;
+    _isDeleting = false;
+    _isUpdatingStatus = false;
+
+    _errorMessage = null;
+
+    _notify();
+  }
+
+  // ============================================================
+  // CLEAR ERROR
+  // ============================================================
+
+  void clearError() {
+    if (_disposed) return;
+
+    _errorMessage = null;
+    _notify();
+  }
+
+  // ============================================================
+  // ERROR HANDLING
   // ============================================================
 
   String _cleanError(Object error) {
     final message = error.toString();
 
-    if (message.startsWith(
-      'Exception: ',
-    )) {
-      return message.substring(
-        'Exception: '.length,
-      );
-    }
+    return message.startsWith('Exception: ')
+        ? message.substring('Exception: '.length)
+        : message;
+  }
 
-    return message;
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
+  @override
+  void dispose() {
+    _disposed = true;
+
+    ++_sessionVersion;
+    ++_requestVersion;
+
+    super.dispose();
   }
 }

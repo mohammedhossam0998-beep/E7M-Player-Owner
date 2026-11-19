@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 
 import '../models/availability_settings_model.dart';
@@ -10,69 +11,100 @@ class AvailabilityProvider extends ChangeNotifier {
     AvailabilityService? service,
   }) : _service = service ?? AvailabilityService();
 
-  // ============================================================
-  // STATE
-  // ============================================================
-
   AvailabilitySettingsModel? _settings;
 
   bool _isLoading = false;
   bool _isSaving = false;
+  bool _disposed = false;
 
   String? _errorMessage;
-
   int? _pitchId;
+
+  int _requestVersion = 0;
 
   // ============================================================
   // GETTERS
   // ============================================================
 
-  AvailabilitySettingsModel? get settings =>
-      _settings;
+  AvailabilitySettingsModel? get settings => _settings;
 
-  bool get isLoading =>
-      _isLoading;
+  bool get isLoading => _isLoading;
 
-  bool get isSaving =>
-      _isSaving;
+  bool get isSaving => _isSaving;
 
-  bool get hasError =>
-      _errorMessage != null;
+  bool get hasError => _errorMessage != null;
 
-  String? get errorMessage =>
-      _errorMessage;
+  String? get errorMessage => _errorMessage;
 
-  int? get pitchId =>
-      _pitchId;
+  int? get pitchId => _pitchId;
 
-  bool get hasSettings =>
-      _settings != null;
+  bool get hasSettings => _settings != null;
 
   // ============================================================
-  // GET AVAILABILITY
+  // SAFE NOTIFICATION
   // ============================================================
 
-  Future<void> fetchAvailability(
-      int pitchId,
-      ) async {
+  void _notify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  // ============================================================
+  // SWITCH STADIUM SAFELY
+  // ============================================================
+
+  void _activatePitch(int pitchId) {
+    if (_pitchId == pitchId) return;
+
+    ++_requestVersion;
+
     _pitchId = pitchId;
+    _settings = null;
+    _errorMessage = null;
+
+    _isLoading = false;
+    _isSaving = false;
+  }
+
+  // ============================================================
+  // FETCH AVAILABILITY
+  // ============================================================
+
+  Future<void> fetchAvailability(int pitchId) async {
+    if (_disposed) return;
+
+    _activatePitch(pitchId);
+
+    if (_isSaving) return;
+
+    final request = ++_requestVersion;
 
     _isLoading = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      _settings =
-      await _service.getAvailabilitySettings(
-        pitchId,
-      );
-    } catch (e) {
-      _errorMessage = _cleanError(e);
-    } finally {
-      _isLoading = false;
+      final result =
+      await _service.getAvailabilitySettings(pitchId);
 
-      notifyListeners();
+      if (_disposed || request != _requestVersion) {
+        return;
+      }
+
+      _settings = result;
+    } catch (error) {
+      if (_disposed || request != _requestVersion) {
+        return;
+      }
+
+      _errorMessage = _cleanError(error);
+    } finally {
+      if (!_disposed && request == _requestVersion) {
+        _isLoading = false;
+        _notify();
+      }
     }
   }
 
@@ -84,44 +116,65 @@ class AvailabilityProvider extends ChangeNotifier {
       int pitchId,
       AvailabilitySettingsModel settings,
       ) async {
-    _pitchId = pitchId;
+    if (_disposed) return null;
 
+    _activatePitch(pitchId);
+
+    if (_isSaving) return null;
+
+    final request = ++_requestVersion;
+
+    _isLoading = false;
     _isSaving = true;
     _errorMessage = null;
 
-    notifyListeners();
+    _notify();
 
     try {
-      final savedSettings =
+      final saved =
       await _service.saveAvailabilitySettings(
         pitchId,
         settings,
       );
 
-      _settings = savedSettings;
+      if (_disposed || request != _requestVersion) {
+        return null;
+      }
 
-      return savedSettings;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+      _settings = saved;
+
+      return saved;
+    } catch (error) {
+      if (!_disposed && request == _requestVersion) {
+        _errorMessage = _cleanError(error);
+      }
 
       return null;
     } finally {
-      _isSaving = false;
-
-      notifyListeners();
+      if (!_disposed && request == _requestVersion) {
+        _isSaving = false;
+        _notify();
+      }
     }
   }
 
   // ============================================================
-  // CLEAR
+  // CLEAR ALL STATE
   // ============================================================
 
   void clear() {
+    if (_disposed) return;
+
+    ++_requestVersion;
+
     _settings = null;
     _pitchId = null;
     _errorMessage = null;
 
-    notifyListeners();
+    _isLoading = false;
+    _isSaving = false;
+
+    _notify();
   }
 
   // ============================================================
@@ -129,24 +182,33 @@ class AvailabilityProvider extends ChangeNotifier {
   // ============================================================
 
   void clearError() {
-    _errorMessage = null;
+    if (_disposed) return;
 
-    notifyListeners();
+    _errorMessage = null;
+    _notify();
   }
 
   // ============================================================
-  // CLEAN ERROR
+  // ERROR HANDLING
   // ============================================================
 
   String _cleanError(Object error) {
     final message = error.toString();
 
-    if (message.startsWith('Exception: ')) {
-      return message.substring(
-        'Exception: '.length,
-      );
-    }
+    return message.startsWith('Exception: ')
+        ? message.substring('Exception: '.length)
+        : message;
+  }
 
-    return message;
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ++_requestVersion;
+
+    super.dispose();
   }
 }

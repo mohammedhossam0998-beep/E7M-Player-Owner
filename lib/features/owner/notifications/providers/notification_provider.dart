@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 
 import '../models/notification_model.dart';
@@ -20,8 +21,17 @@ class NotificationProvider extends ChangeNotifier {
   bool _isUpdating = false;
 
   int _unreadCount = 0;
-
   String? _errorMessage;
+
+  // Prevent old requests from restoring data after logout.
+  int _sessionVersion = 0;
+  int _listRequestVersion = 0;
+
+  bool _disposed = false;
+
+  bool _isCurrent(int version) {
+    return !_disposed && version == _sessionVersion;
+  }
 
   // ============================================================
   // GETTERS
@@ -43,10 +53,34 @@ class NotificationProvider extends ChangeNotifier {
   bool get hasError => _errorMessage != null;
 
   // ============================================================
+  // CLEAR NOTIFICATIONS ON LOGOUT
+  // ============================================================
+
+  void clearNotifications() {
+    if (_disposed) return;
+
+    _sessionVersion++;
+    _listRequestVersion++;
+
+    _notifications = [];
+    _unreadCount = 0;
+    _errorMessage = null;
+    _isLoading = false;
+    _isUpdating = false;
+
+    notifyListeners();
+  }
+
+  // ============================================================
   // LOAD NOTIFICATIONS
   // ============================================================
 
   Future<void> loadNotifications() async {
+    if (_disposed) return;
+
+    final session = _sessionVersion;
+    final request = ++_listRequestVersion;
+
     _isLoading = true;
     _errorMessage = null;
 
@@ -56,19 +90,27 @@ class NotificationProvider extends ChangeNotifier {
       final notifications =
       await _service.getNotifications();
 
+      if (!_isCurrent(session) ||
+          request != _listRequestVersion) {
+        return;
+      }
+
       _notifications = notifications;
 
-      // Keep unread count synchronized with
-      // the actual notifications returned by backend.
-      _unreadCount = _notifications
+      _unreadCount = notifications
           .where((notification) => !notification.isRead)
           .length;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (_isCurrent(session) &&
+          request == _listRequestVersion) {
+        _errorMessage = _cleanError(error);
+      }
     } finally {
-      _isLoading = false;
-
-      notifyListeners();
+      if (_isCurrent(session) &&
+          request == _listRequestVersion) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -77,16 +119,21 @@ class NotificationProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> loadUnreadCount() async {
+    if (_disposed) return;
+
+    final session = _sessionVersion;
+
     try {
-      final count =
-      await _service.getUnreadCount();
+      final count = await _service.getUnreadCount();
+
+      if (!_isCurrent(session)) return;
 
       _unreadCount = count;
-
       notifyListeners();
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (!_isCurrent(session)) return;
 
+      _errorMessage = _cleanError(error);
       notifyListeners();
     }
   }
@@ -96,117 +143,147 @@ class NotificationProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> refresh() async {
-    try {
-      _errorMessage = null;
+    if (_disposed) return;
 
-      final results = await Future.wait([
+    final session = _sessionVersion;
+    final request = ++_listRequestVersion;
+
+    _errorMessage = null;
+
+    try {
+      final results = await Future.wait<dynamic>([
         _service.getNotifications(),
         _service.getUnreadCount(),
       ]);
 
+      if (!_isCurrent(session) ||
+          request != _listRequestVersion) {
+        return;
+      }
+
       _notifications =
       results[0] as List<NotificationModel>;
 
-      _unreadCount =
-      results[1] as int;
+      _unreadCount = results[1] as int;
 
       notifyListeners();
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (!_isCurrent(session) ||
+          request != _listRequestVersion) {
+        return;
+      }
 
+      _errorMessage = _cleanError(error);
       notifyListeners();
     }
   }
 
   // ============================================================
-  // MARK ONE AS READ
+  // MARK ONE NOTIFICATION AS READ
   // ============================================================
 
   Future<bool> markAsRead(int notificationId) async {
+    if (_disposed || _isUpdating) return false;
+
+    final session = _sessionVersion;
+
+    _isUpdating = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
     try {
-      _isUpdating = true;
-      _errorMessage = null;
-
-      notifyListeners();
-
-      final updatedNotification =
-      await _service.markAsRead(
+      final updated = await _service.markAsRead(
         notificationId,
       );
 
-      if (updatedNotification != null) {
-        final index = _notifications.indexWhere(
-              (notification) =>
-          notification.id == notificationId,
-        );
+      if (!_isCurrent(session)) return false;
 
-        if (index != -1) {
-          _notifications[index] =
-              updatedNotification;
-        }
-      } else {
-        // Backend confirmed success but did not
-        // return the notification object.
-        final index = _notifications.indexWhere(
-              (notification) =>
-          notification.id == notificationId,
-        );
+      List<NotificationModel>? refreshed;
 
-        if (index != -1) {
-          // Reload to keep local state authoritative.
-          final notifications =
-          await _service.getNotifications();
+      if (updated == null) {
+        refreshed = await _service.getNotifications();
 
-          _notifications = notifications;
-        }
+        if (!_isCurrent(session)) return false;
       }
 
-      // Synchronize with backend.
-      _unreadCount =
-      await _service.getUnreadCount();
+      final count = await _service.getUnreadCount();
+
+      if (!_isCurrent(session)) return false;
+
+      if (updated != null) {
+        final index = _notifications.indexWhere(
+              (notification) =>
+          notification.id == notificationId,
+        );
+
+        if (index != -1) {
+          _notifications[index] = updated;
+        }
+      } else if (refreshed != null) {
+        _notifications = refreshed;
+      }
+
+      _unreadCount = count;
 
       return true;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (_isCurrent(session)) {
+        _errorMessage = _cleanError(error);
+      }
 
       return false;
     } finally {
-      _isUpdating = false;
-
-      notifyListeners();
+      if (_isCurrent(session)) {
+        _isUpdating = false;
+        notifyListeners();
+      }
     }
   }
 
   // ============================================================
-  // MARK ALL AS READ
+  // MARK ALL NOTIFICATIONS AS READ
   // ============================================================
 
   Future<bool> markAllAsRead() async {
+    if (_disposed || _isUpdating) return false;
+
+    final session = _sessionVersion;
+
+    _isUpdating = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
     try {
-      _isUpdating = true;
-      _errorMessage = null;
-
-      notifyListeners();
-
       await _service.markAllAsRead();
 
-      // Reload from backend instead of assuming
-      // local state is correct.
-      _notifications =
+      if (!_isCurrent(session)) return false;
+
+      final notifications =
       await _service.getNotifications();
 
-      _unreadCount =
-      await _service.getUnreadCount();
+      if (!_isCurrent(session)) return false;
+
+      final count = await _service.getUnreadCount();
+
+      if (!_isCurrent(session)) return false;
+
+      _notifications = notifications;
+      _unreadCount = count;
 
       return true;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (_isCurrent(session)) {
+        _errorMessage = _cleanError(error);
+      }
 
       return false;
     } finally {
-      _isUpdating = false;
-
-      notifyListeners();
+      if (_isCurrent(session)) {
+        _isUpdating = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -217,35 +294,45 @@ class NotificationProvider extends ChangeNotifier {
   Future<bool> deleteNotification(
       int notificationId,
       ) async {
+    if (_disposed || _isUpdating) return false;
+
+    final session = _sessionVersion;
+
+    _isUpdating = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
     try {
-      _isUpdating = true;
-      _errorMessage = null;
-
-      notifyListeners();
-
       await _service.deleteNotification(
         notificationId,
       );
 
-      // Remove only after backend confirms deletion.
+      if (!_isCurrent(session)) return false;
+
+      final count = await _service.getUnreadCount();
+
+      if (!_isCurrent(session)) return false;
+
       _notifications.removeWhere(
             (notification) =>
         notification.id == notificationId,
       );
 
-      // Synchronize unread count with backend.
-      _unreadCount =
-      await _service.getUnreadCount();
+      _unreadCount = count;
 
       return true;
-    } catch (e) {
-      _errorMessage = _cleanError(e);
+    } catch (error) {
+      if (_isCurrent(session)) {
+        _errorMessage = _cleanError(error);
+      }
 
       return false;
     } finally {
-      _isUpdating = false;
-
-      notifyListeners();
+      if (_isCurrent(session)) {
+        _isUpdating = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -254,12 +341,11 @@ class NotificationProvider extends ChangeNotifier {
   // ============================================================
 
   void clearError() {
-    if (_errorMessage == null) {
+    if (_disposed || _errorMessage == null) {
       return;
     }
 
     _errorMessage = null;
-
     notifyListeners();
   }
 
@@ -277,5 +363,18 @@ class NotificationProvider extends ChangeNotifier {
     }
 
     return message;
+  }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
+  @override
+  void dispose() {
+    _sessionVersion++;
+    _listRequestVersion++;
+    _disposed = true;
+
+    super.dispose();
   }
 }

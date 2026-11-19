@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 
 import 'package:e7m/shared/localization/language_provider.dart';
 import 'package:e7m/core/theme/app_colors.dart';
+import 'package:e7m/core/network/api_client.dart';
+import 'package:e7m/features/owner/profile/providers/owner_profile_provider.dart';
 
 import 'package:e7m/features/owner/dashboard/presentation/providers/owner_dashboard_provider.dart';
+import 'package:e7m/features/owner/dashboard/presentation/widgets/owner_dashboard_insights.dart';
 
 import 'package:e7m/features/owner/notifications/notifications_screen.dart';
 import 'package:e7m/features/owner/reviews/presentation/reviews_screen.dart';
@@ -46,7 +49,17 @@ class _OwnerDashboardScreenState
       context
           .read<OwnerDashboardProvider>()
           .loadDashboard();
+
+      // Loads the same profile photo used by Edit Profile.
+      // Provider notifications update the header after profile edits.
+      context.read<OwnerProfileProvider>().loadProfile();
     });
+  }
+
+  Future<void> _refreshDashboardAndProfile() async {
+    await context.read<OwnerDashboardProvider>().refreshDashboard();
+    if (!mounted) return;
+    await context.read<OwnerProfileProvider>().loadProfile();
   }
 
 // ============================================================
@@ -67,7 +80,7 @@ class _OwnerDashboardScreenState
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.secondary,
-          onRefresh: dashboard.refreshDashboard,
+          onRefresh: _refreshDashboardAndProfile,
           child: _buildBody(
             context,
             languageProvider,
@@ -178,6 +191,14 @@ class _OwnerDashboardScreenState
           const SizedBox(height: 26),
 
 // ======================================================
+// ATTENTION SUMMARY (STADIUM + ACADEMY)
+// ======================================================
+
+          OwnerDashboardInsights(dashboard: dashboard),
+
+          const SizedBox(height: 24),
+
+// ======================================================
 // REVENUE OVERVIEW
 // ======================================================
 
@@ -239,6 +260,16 @@ class _OwnerDashboardScreenState
       LanguageProvider languageProvider,
       OwnerDashboardProvider dashboard,
       ) {
+    final profile = context.watch<OwnerProfileProvider>().profile;
+    final profileName = profile?.fullName?.trim() ?? '';
+    final ownerName = profileName.isNotEmpty
+        ? profileName
+        : dashboard.ownerName;
+    final initial = ownerName.trim().isEmpty
+        ? 'O'
+        : ownerName.trim().characters.first.toUpperCase();
+    final imageUrl = ApiClient.resolveMediaUrl(profile?.profileImage);
+
     return Container(
       padding: const EdgeInsets.all(16),
 
@@ -286,12 +317,26 @@ class _OwnerDashboardScreenState
               ),
             ),
 
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 25,
               backgroundColor: Colors.white,
-
-              backgroundImage: AssetImage(
-                'assets/images/profile.png',
+              // Use the actual image saved in the Owner profile.
+              // On missing/failed image, display the first letter.
+              foregroundImage: imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
+              onForegroundImageError: imageUrl.isNotEmpty
+                  ? (error, stackTrace) {
+                debugPrint('Owner dashboard avatar: $error');
+              }
+                  : null,
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                ),
               ),
             ),
           ),
@@ -322,7 +367,7 @@ class _OwnerDashboardScreenState
                 const SizedBox(height: 4),
 
                 Text(
-                  dashboard.ownerName,
+                  ownerName,
 
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

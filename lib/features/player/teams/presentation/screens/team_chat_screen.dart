@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:e7m/core/network/api_client.dart';
 
 import '../../data/models/team_message_model.dart';
 import '../providers/team_provider.dart';
@@ -53,7 +54,7 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
     await context.read<TeamProvider>().loadTeamMessages(widget.teamId);
 
     _socketService.connect(
-      baseUrl: 'http://172.16.25.24:5000',
+      baseUrl: ApiClient.baseUrl.replaceFirst('/api', ''),
       token: token,
       onConnected: () {
         _socketService.joinTeam(
@@ -100,15 +101,34 @@ class _TeamChatScreenState extends State<TeamChatScreen> {
       return;
     }
 
-    _socketService.sendMessage(
-      widget.teamId,
-      text,
-      onResult: (result) {
-        print('📨 Send result: $result');
-      },
+    final provider = context.read<TeamProvider>();
+
+    final sentMessage = await provider.sendTeamMessage(
+      teamId: widget.teamId,
+      message: text,
     );
 
-    _messageController.clear();
+    if (!mounted) return;
+
+    if (sentMessage == null) {
+      final providerError = provider.errorMessage?.trim();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            providerError == null || providerError.isEmpty
+                ? 'Could not send message. Please try again.'
+                : providerError,
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    if (_messageController.text.trim() == text) {
+      _messageController.clear();
+    }
 
     _scrollToBottom();
   }
@@ -471,9 +491,7 @@ class _MessageInput extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(width: 8),
-
             SizedBox(
               width: 48,
               height: 48,
@@ -539,9 +557,7 @@ class _EmptyChatState extends StatelessWidget {
                 color: Color(0xFF7CC000),
               ),
             ),
-
             const SizedBox(height: 16),
-
             Text(
               message,
               textAlign: TextAlign.center,
@@ -584,9 +600,7 @@ class _ChatErrorState extends StatelessWidget {
               size: 56,
               color: Colors.grey.shade400,
             ),
-
             const SizedBox(height: 14),
-
             Text(
               message,
               textAlign: TextAlign.center,
@@ -594,9 +608,7 @@ class _ChatErrorState extends StatelessWidget {
                 color: Colors.grey.shade700,
               ),
             ),
-
             const SizedBox(height: 16),
-
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(

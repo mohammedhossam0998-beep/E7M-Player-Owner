@@ -34,7 +34,7 @@ class ApiClient {
   // Priority:
   //   1. --dart-define=API_BASE_URL=https://api.example.com
   //   2. Release build  -> _prodBaseUrl (must be HTTPS)
-  //   3. Debug build    -> _devBaseUrl  (local LAN IP)
+  //   3. Debug build    -> _devBaseUrl  (Render)
   //
   // Release example:
   //   flutter build appbundle --release \
@@ -46,11 +46,9 @@ class ApiClient {
   static const String _envBaseUrl =
   String.fromEnvironment('API_BASE_URL');
 
-  // TODO: replace with your real production HTTPS domain.
-  static const String _prodBaseUrl = 'https://api.your-domain.com';
+  static const String _prodBaseUrl = 'http://192.168.1.4:5000';
 
-  static const String _devBaseUrl = 'http://172.16.25.24:5000';
-
+  static const String _devBaseUrl = 'http://192.168.1.4:5000';
   static const String baseUrl = _envBaseUrl != ''
       ? _envBaseUrl
       : (kReleaseMode ? _prodBaseUrl : _devBaseUrl);
@@ -77,9 +75,9 @@ class ApiClient {
   // TIMEOUTS
   // ============================================================
 
-  static const Duration _requestTimeout = Duration(seconds: 30);
-  static const Duration _uploadTimeout = Duration(seconds: 90);
 
+  static const Duration _requestTimeout = Duration(seconds: 60);
+  static const Duration _uploadTimeout = Duration(seconds: 90);
   // ============================================================
   // UNAUTHORIZED CALLBACK
   //

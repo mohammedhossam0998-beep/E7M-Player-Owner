@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:e7m/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:e7m/features/owner/session/owner_session_cleanup.dart';
 import 'package:e7m/features/owner/booking/presentation/screens/owner_bookings_screen.dart';
 import 'package:e7m/features/owner/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:e7m/features/owner/profile/providers/owner_profile_provider.dart';
@@ -12,6 +13,7 @@ import 'package:e7m/features/owner/settings/change_password_screen.dart';
 import 'package:e7m/features/owner/settings/help_support_screen.dart';
 import 'package:e7m/features/owner/settings/language_screen.dart';
 import 'package:e7m/features/owner/notifications/notifications_screen.dart';
+import 'package:e7m/features/owner/notifications/providers/notification_provider.dart';
 import 'package:e7m/features/owner/settings/privacy_policy_screen.dart';
 import 'package:e7m/features/owner/stadium/presentation/screens/owner_stadiums_screen.dart';
 import 'package:e7m/shared/localization/language_provider.dart';
@@ -35,6 +37,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
       context.read<OwnerProfileProvider>().loadProfile();
     });
   }
@@ -86,9 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           content: Text(
-            languageProvider.translate(
-              'logout_confirmation',
-            ),
+            languageProvider.translate('logout_confirmation'),
             style: const TextStyle(
               color: ProfileScreen.secondary,
               height: 1.5,
@@ -127,32 +129,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final auth = context.read<AuthController>();
+      await auth.logout();
 
-    await prefs.setBool(
-      'is_logged_in',
-      false,
-    );
+      OwnerSessionCleanup.clear(context);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/welcome',
-          (_) => false,
-    );
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/welcome',
+            (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر تسجيل الخروج. حاول مرة أخرى.'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-    context.watch<LanguageProvider>();
+    final languageProvider = context.watch<LanguageProvider>();
 
     return Scaffold(
       backgroundColor: ProfileScreen.background,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -169,16 +177,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Consumer<OwnerProfileProvider>(
             builder: (_, provider, __) {
               return Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  end: 12,
-                ),
+                padding: const EdgeInsetsDirectional.only(end: 12),
                 child: IconButton(
-                  onPressed:
-                  provider.isLoading ? null : _refresh,
+                  onPressed: provider.isLoading ? null : _refresh,
                   tooltip: 'Refresh',
                   style: IconButton.styleFrom(
-                    backgroundColor:
-                    ProfileScreen.background,
+                    backgroundColor: ProfileScreen.background,
                   ),
                   icon: const Icon(
                     Icons.refresh_rounded,
@@ -190,11 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-
       body: Consumer<OwnerProfileProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading &&
-              !provider.hasProfile) {
+          if (provider.isLoading && !provider.hasProfile) {
             return const Center(
               child: CircularProgressIndicator(
                 color: ProfileScreen.green,
@@ -205,9 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (!provider.hasProfile) {
             return _ErrorState(
               message: provider.errorMessage ??
-                  languageProvider.translate(
-                    'something_went_wrong',
-                  ),
+                  languageProvider.translate('something_went_wrong'),
               onRetry: provider.loadProfile,
             );
           }
@@ -218,16 +218,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: ProfileScreen.green,
             onRefresh: _refresh,
             child: ListView(
-              physics:
-              const AlwaysScrollableScrollPhysics(
+              physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                18,
-                18,
-                35,
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 35),
               children: [
                 _ProfileHeader(
                   name: profile.fullName,
@@ -239,78 +233,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onEdit: _editProfile,
                   languageProvider: languageProvider,
                 ),
-
                 const SizedBox(height: 24),
-
                 _SectionTitle(
-                  title: languageProvider.translate(
-                    'account',
-                  ),
+                  title: languageProvider.translate('account'),
                 ),
-
                 const SizedBox(height: 10),
-
                 _SettingsCard(
                   children: [
                     _SettingTile(
                       icon: Icons.edit_outlined,
                       color: const Color(0xff3B82F6),
-                      title: languageProvider.translate(
-                        'edit_profile',
-                      ),
+                      title: languageProvider.translate('edit_profile'),
                       onTap: _editProfile,
                     ),
-
                     _SettingTile(
                       icon: Icons.stadium_outlined,
                       color: ProfileScreen.green,
-                      title: languageProvider.translate(
-                        'my_stadium',
-                      ),
+                      title: languageProvider.translate('my_stadium'),
                       onTap: () {
-                        _open(
-                          const OwnerStadiumsScreen(),
-                        );
+                        _open(const OwnerStadiumsScreen());
                       },
                     ),
-
                     _SettingTile(
                       icon: Icons.lock_outline_rounded,
                       color: const Color(0xffF97316),
-                      title: languageProvider.translate(
-                        'change_password',
-                      ),
+                      title: languageProvider.translate('change_password'),
                       onTap: () {
-                        _open(
-                          const ChangePasswordScreen(),
-                        );
+                        _open(const ChangePasswordScreen());
                       },
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 _SectionTitle(
-                  title: languageProvider.translate(
-                    'quick_actions',
-                  ),
+                  title: languageProvider.translate('quick_actions'),
                 ),
-
                 const SizedBox(height: 10),
-
                 Row(
                   children: [
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.calendar_month_outlined,
-                        title: languageProvider.translate(
-                          'bookings',
-                        ),
+                        title: languageProvider.translate('bookings'),
                         onTap: () {
-                          _open(
-                            const OwnerBookingsScreen(),
-                          );
+                          _open(const OwnerBookingsScreen());
                         },
                       ),
                     ),
@@ -318,13 +284,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.bar_chart_rounded,
-                        title: languageProvider.translate(
-                          'revenue',
-                        ),
+                        title: languageProvider.translate('revenue'),
                         onTap: () {
-                          _open(
-                            const RevenueScreen(),
-                          );
+                          _open(const RevenueScreen());
                         },
                       ),
                     ),
@@ -332,117 +294,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.reviews_outlined,
-                        title: languageProvider.translate(
-                          'reviews',
-                        ),
+                        title: languageProvider.translate('reviews'),
                         onTap: () {
-                          _open(
-                            const ReviewsScreen(),
-                          );
+                          _open(const ReviewsScreen());
                         },
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 _SectionTitle(
-                  title: languageProvider.translate(
-                    'preferences',
-                  ),
+                  title: languageProvider.translate('preferences'),
                 ),
-
                 const SizedBox(height: 10),
-
                 _SettingsCard(
                   children: [
                     _SettingTile(
-                      icon:
-                      Icons.notifications_none_rounded,
+                      icon: Icons.notifications_none_rounded,
                       color: const Color(0xff8B5CF6),
-                      title: languageProvider.translate(
-                        'notifications',
-                      ),
+                      title: languageProvider.translate('notifications'),
                       onTap: () {
-                        _open(
-                          const NotificationsScreen(),
-                        );
+                        _open(const NotificationsScreen());
                       },
                     ),
-
                     _SettingTile(
                       icon: Icons.language_rounded,
                       color: const Color(0xff14B8A6),
-                      title: languageProvider.translate(
-                        'language',
-                      ),
+                      title: languageProvider.translate('language'),
                       onTap: () {
-                        _open(
-                          const LanguageScreen(),
-                        );
+                        _open(const LanguageScreen());
                       },
                     ),
-
                     _SettingTile(
-                      icon:
-                      Icons.workspace_premium_outlined,
+                      icon: Icons.workspace_premium_outlined,
                       color: ProfileScreen.green,
-                      title: languageProvider.translate(
-                        'my_subscription',
-                      ),
+                      title: languageProvider.translate('my_subscription'),
                       onTap: () {
+                        // Subscription screen not connected yet.
                       },
                     ),
-
                     _SettingTile(
                       icon: Icons.privacy_tip_outlined,
                       color: const Color(0xff0F766E),
-                      title: languageProvider.translate(
-                        'privacy_policy',
-                      ),
+                      title: languageProvider.translate('privacy_policy'),
                       onTap: () {
-                        _open(
-                          const PrivacyPolicyScreen(),
-                        );
+                        _open(const PrivacyPolicyScreen());
                       },
                     ),
-
                     _SettingTile(
                       icon: Icons.help_outline_rounded,
                       color: const Color(0xff6366F1),
-                      title: languageProvider.translate(
-                        'help_support',
-                      ),
+                      title: languageProvider.translate('help_support'),
                       onTap: () {
-                        _open(
-                          const HelpSupportScreen(),
-                        );
+                        _open(const HelpSupportScreen());
                       },
                     ),
-
                     _SettingTile(
                       icon: Icons.info_outline_rounded,
                       color: const Color(0xff64748B),
-                      title: languageProvider.translate(
-                        'about_e7m',
-                      ),
+                      title: languageProvider.translate('about_e7m'),
                       showDivider: false,
                       onTap: () {
-                        _open(
-                          const AboutScreen(),
-                        );
+                        _open(const AboutScreen());
                       },
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 _LogoutButton(
-                  title: languageProvider.translate(
-                    'logout',
-                  ),
+                  title: languageProvider.translate('logout'),
                   onTap: _logout,
                 ),
               ],
@@ -453,10 +373,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
-// ============================================================
-// PROFILE HEADER
-// ============================================================
 
 class _ProfileHeader extends StatelessWidget {
   final String? name;
@@ -494,9 +410,7 @@ class _ProfileHeader extends StatelessWidget {
     final ownerPhone = _value(phone);
     final ownerBusiness = _value(businessName);
 
-    final hasImage =
-        imageUrl != null &&
-            imageUrl!.trim().isNotEmpty;
+    final hasImage = imageUrl != null && imageUrl!.trim().isNotEmpty;
 
     final initial = ownerName == '—'
         ? 'O'
@@ -508,9 +422,7 @@ class _ProfileHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: ProfileScreen.border,
-        ),
+        border: Border.all(color: ProfileScreen.border),
       ),
       child: Column(
         children: [
@@ -522,18 +434,15 @@ class _ProfileHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: ProfileScreen.green
-                        .withValues(alpha: .25),
+                    color: ProfileScreen.green.withValues(alpha: .25),
                     width: 2,
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor:
-                  const Color(0xffEDF7DE),
-                  backgroundImage: hasImage
-                      ? NetworkImage(imageUrl!)
-                      : null,
+                  backgroundColor: const Color(0xffEDF7DE),
+                  backgroundImage:
+                  hasImage ? NetworkImage(imageUrl!) : null,
                   child: hasImage
                       ? null
                       : Text(
@@ -546,7 +455,6 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
               ),
-
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -555,13 +463,11 @@ class _ProfileHeader extends StatelessWidget {
                   shape: const CircleBorder(),
                   child: InkWell(
                     onTap: onEdit,
-                    customBorder:
-                    const CircleBorder(),
+                    customBorder: const CircleBorder(),
                     child: Container(
                       width: 38,
                       height: 38,
-                      decoration:
-                      const BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -575,9 +481,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 15),
-
           Text(
             ownerName,
             textAlign: TextAlign.center,
@@ -587,9 +491,7 @@ class _ProfileHeader extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 5),
-
           Text(
             ownerEmail,
             textAlign: TextAlign.center,
@@ -598,9 +500,7 @@ class _ProfileHeader extends StatelessWidget {
               fontSize: 13.5,
             ),
           ),
-
           const SizedBox(height: 12),
-
           if (isVerified == true)
             Container(
               padding: const EdgeInsets.symmetric(
@@ -608,10 +508,8 @@ class _ProfileHeader extends StatelessWidget {
                 vertical: 7,
               ),
               decoration: BoxDecoration(
-                color: ProfileScreen.green
-                    .withValues(alpha: .10),
-                borderRadius:
-                BorderRadius.circular(30),
+                color: ProfileScreen.green.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(30),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -623,9 +521,7 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    languageProvider.translate(
-                      'verified_stadium_owner',
-                    ),
+                    languageProvider.translate('verified_stadium_owner'),
                     style: const TextStyle(
                       color: ProfileScreen.green,
                       fontSize: 12,
@@ -635,29 +531,20 @@ class _ProfileHeader extends StatelessWidget {
                 ],
               ),
             ),
-
           const SizedBox(height: 20),
-
           const Divider(
             height: 1,
             color: ProfileScreen.border,
           ),
-
           const SizedBox(height: 8),
-
           _ProfileInfoRow(
             icon: Icons.phone_outlined,
-            title: languageProvider.translate(
-              'phone',
-            ),
+            title: languageProvider.translate('phone'),
             value: ownerPhone,
           ),
-
           _ProfileInfoRow(
             icon: Icons.business_outlined,
-            title: languageProvider.translate(
-              'business_name',
-            ),
+            title: languageProvider.translate('business_name'),
             value: ownerBusiness,
           ),
         ],
@@ -665,10 +552,6 @@ class _ProfileHeader extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// PROFILE INFO ROW
-// ============================================================
 
 class _ProfileInfoRow extends StatelessWidget {
   final IconData icon;
@@ -684,9 +567,7 @@ class _ProfileInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 9,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
           Container(
@@ -694,8 +575,7 @@ class _ProfileInfoRow extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: ProfileScreen.background,
-              borderRadius:
-              BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
               icon,
@@ -703,13 +583,10 @@ class _ProfileInfoRow extends StatelessWidget {
               size: 19,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -738,10 +615,6 @@ class _ProfileInfoRow extends StatelessWidget {
   }
 }
 
-// ============================================================
-// SECTION TITLE
-// ============================================================
-
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -762,10 +635,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ============================================================
-// SETTINGS CARD
-// ============================================================
-
 class _SettingsCard extends StatelessWidget {
   final List<Widget> children;
 
@@ -780,20 +649,12 @@ class _SettingsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(19),
-        border: Border.all(
-          color: ProfileScreen.border,
-        ),
+        border: Border.all(color: ProfileScreen.border),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 }
-
-// ============================================================
-// SETTING TILE
-// ============================================================
 
 class _SettingTile extends StatelessWidget {
   final IconData icon;
@@ -816,8 +677,7 @@ class _SettingTile extends StatelessWidget {
       children: [
         ListTile(
           onTap: onTap,
-          contentPadding:
-          const EdgeInsets.symmetric(
+          contentPadding: const EdgeInsets.symmetric(
             horizontal: 14,
             vertical: 2,
           ),
@@ -826,8 +686,7 @@ class _SettingTile extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: color.withValues(alpha: .10),
-              borderRadius:
-              BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
@@ -849,7 +708,6 @@ class _SettingTile extends StatelessWidget {
             color: Color(0xffA1A4AC),
           ),
         ),
-
         if (showDivider)
           const Divider(
             height: 1,
@@ -861,10 +719,6 @@ class _SettingTile extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// QUICK ACTION
-// ============================================================
 
 class _QuickAction extends StatelessWidget {
   final IconData icon;
@@ -893,22 +747,17 @@ class _QuickAction extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(17),
-            border: Border.all(
-              color: ProfileScreen.border,
-            ),
+            border: Border.all(color: ProfileScreen.border),
           ),
           child: Column(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: ProfileScreen.green
-                      .withValues(alpha: .10),
-                  borderRadius:
-                  BorderRadius.circular(11),
+                  color: ProfileScreen.green.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   icon,
@@ -916,9 +765,7 @@ class _QuickAction extends StatelessWidget {
                   size: 19,
                 ),
               ),
-
               const SizedBox(height: 7),
-
               Text(
                 title,
                 maxLines: 1,
@@ -937,10 +784,6 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// LOGOUT BUTTON
-// ============================================================
 
 class _LogoutButton extends StatelessWidget {
   final String title;
@@ -972,8 +815,7 @@ class _LogoutButton extends StatelessWidget {
           ),
         ),
         style: OutlinedButton.styleFrom(
-          backgroundColor:
-          Colors.red.withValues(alpha: .035),
+          backgroundColor: Colors.red.withValues(alpha: .035),
           side: BorderSide(
             color: Colors.red.withValues(alpha: .18),
           ),
@@ -985,10 +827,6 @@ class _LogoutButton extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// ERROR STATE
-// ============================================================
 
 class _ErrorState extends StatelessWidget {
   final String message;
@@ -1011,8 +849,7 @@ class _ErrorState extends StatelessWidget {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: ProfileScreen.navy
-                    .withValues(alpha: .06),
+                color: ProfileScreen.navy.withValues(alpha: .06),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -1021,9 +858,7 @@ class _ErrorState extends StatelessWidget {
                 size: 34,
               ),
             ),
-
             const SizedBox(height: 16),
-
             Text(
               message,
               textAlign: TextAlign.center,
@@ -1034,25 +869,17 @@ class _ErrorState extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-
             const SizedBox(height: 16),
-
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(
-                Icons.refresh_rounded,
-              ),
-              label: const Text(
-                'Retry',
-              ),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                ProfileScreen.green,
+                backgroundColor: ProfileScreen.green,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                  BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),

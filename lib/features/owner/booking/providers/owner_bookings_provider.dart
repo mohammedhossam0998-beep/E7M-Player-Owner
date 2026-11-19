@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:e7m/core/network/api_client.dart';
 
@@ -5,81 +6,82 @@ import '../data/owner_booking_model.dart';
 import '../data/owner_bookings_api.dart';
 
 class OwnerBookingsProvider extends ChangeNotifier {
-  final OwnerBookingsApi _api = OwnerBookingsApi(ApiClient());
+  OwnerBookingsProvider({OwnerBookingsApi? api})
+      : _api = api ?? OwnerBookingsApi(ApiClient());
 
-  // ============================================================
-  // STATE
-  // ============================================================
-
+  final OwnerBookingsApi _api;
   final List<OwnerBookingModel> _bookings = [];
 
   bool _loading = false;
-  bool get loading => _loading;
-
+  bool _disposed = false;
   String? _errorMessage;
-  String? get errorMessage => _errorMessage;
-
   int? _processingBookingId;
+  int _requestVersion = 0;
+  int _accountVersion = 0;
+
+  bool get loading => _loading;
+  String? get errorMessage => _errorMessage;
   int? get processingBookingId => _processingBookingId;
-
   bool get actionLoading => _processingBookingId != null;
-
-  // ============================================================
-  // GETTERS
-  // ============================================================
 
   List<OwnerBookingModel> get bookings =>
       List.unmodifiable(_bookings);
 
   int get totalBookings => _bookings.length;
+  int get pendingBookings => _countStatus('pending');
+  int get confirmedBookings => _countStatus('confirmed');
+  int get rejectedBookings => _countStatus('rejected');
+  int get cancelledBookings => _countStatus('cancelled');
 
-  int get pendingBookings =>
-      _bookings.where((booking) => booking.status == 'pending').length;
+  int _countStatus(String status) => _bookings
+      .where((b) => b.status.toLowerCase() == status)
+      .length;
 
-  int get confirmedBookings =>
-      _bookings.where((booking) => booking.status == 'confirmed').length;
-
-  int get rejectedBookings =>
-      _bookings.where((booking) => booking.status == 'rejected').length;
-
-  int get cancelledBookings =>
-      _bookings.where((booking) => booking.status == 'cancelled').length;
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
 
   // ============================================================
-  // LOAD OWNER BOOKINGS
+  // LOAD BOOKINGS
   // ============================================================
 
   Future<void> loadBookings() async {
-    if (_loading) return;
+    if (_disposed || _loading) return;
+
+    final request = ++_requestVersion;
+    final account = _accountVersion;
 
     _loading = true;
     _errorMessage = null;
-
-    notifyListeners();
+    _notify();
 
     try {
-      debugPrint('=================================');
-      debugPrint('OWNER BOOKINGS: Loading...');
-      debugPrint('=================================');
+      final fresh = await _api.getOwnerBookings();
 
-      final freshBookings = await _api.getOwnerBookings();
+      if (_disposed ||
+          request != _requestVersion ||
+          account != _accountVersion) {
+        return;
+      }
 
       _bookings
         ..clear()
-        ..addAll(freshBookings);
+        ..addAll(fresh);
+    } catch (error) {
+      if (_disposed ||
+          request != _requestVersion ||
+          account != _accountVersion) {
+        return;
+      }
 
-      debugPrint(
-        'OWNER BOOKINGS: ${_bookings.length} loaded',
-      );
-    } catch (e) {
-      debugPrint(
-        'OWNER BOOKINGS LOAD ERROR: $e',
-      );
-
-      _errorMessage = _cleanErrorMessage(e);
+      _errorMessage = _cleanErrorMessage(error);
     } finally {
-      _loading = false;
-      notifyListeners();
+      if (!_disposed &&
+          request == _requestVersion &&
+          account == _accountVersion) {
+        _loading = false;
+        _notify();
+      }
     }
   }
 
@@ -88,156 +90,167 @@ class OwnerBookingsProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> refreshBookings() async {
-    if (_loading || actionLoading) return;
+    if (_disposed || actionLoading) return;
 
     await loadBookings();
   }
 
   // ============================================================
-  // APPROVE BOOKING
+  // APPROVE / REJECT
   // ============================================================
 
-  Future<bool> approveBooking(int bookingId) async {
-    if (actionLoading) return false;
+  Future<bool> approveBooking(int bookingId) =>
+      _changeStatus(bookingId, approve: true);
 
+  Future<bool> rejectBooking(int bookingId) =>
+      _changeStatus(bookingId, approve: false);
+
+  Future<bool> _changeStatus(
+      int bookingId, {
+        required bool approve,
+      }) async {
+    if (_disposed || actionLoading) return false;
+
+    final index = _bookings.indexWhere(
+          (b) => b.id == bookingId,
+    );
+
+    if (index < 0 ||
+        _bookings[index].status.toLowerCase() != 'pending') {
+      _errorMessage =
+      'Booking is no longer pending. Refresh the list.';
+      _notify();
+      return false;
+    }
+
+    final account = _accountVersion;
+
+    // Ignore list responses started before this action.
+    ++_requestVersion;
+    _loading = false;
     _processingBookingId = bookingId;
     _errorMessage = null;
-
-    notifyListeners();
+    _notify();
 
     try {
-      debugPrint(
-        'OWNER BOOKINGS: Approving booking $bookingId',
-      );
+      final updated = approve
+          ? await _api.approveBooking(bookingId)
+          : await _api.rejectBooking(bookingId);
 
-      final updatedBooking =
-      await _api.approveBooking(bookingId);
+      if (_disposed || account != _accountVersion) {
+        return false;
+      }
 
-      _replaceBooking(updatedBooking);
-
-      debugPrint(
-        'OWNER BOOKINGS: Booking $bookingId approved',
-      );
-
+      _replaceBookingPreservingDetails(updated);
       return true;
-    } catch (e) {
-      debugPrint(
-        'OWNER BOOKINGS APPROVE ERROR: $e',
+    } catch (error) {
+      if (_disposed || account != _accountVersion) {
+        return false;
+      }
+
+      final reason = _cleanErrorMessage(error);
+
+      // The server might have updated the booking even if
+      // an error was returned afterwards.
+      await loadBookings();
+
+      if (_disposed || account != _accountVersion) {
+        return false;
+      }
+
+      final now = _bookings.where(
+            (b) => b.id == bookingId,
       );
 
-      _errorMessage = _cleanErrorMessage(e);
+      final expected = approve ? 'confirmed' : 'rejected';
 
+      if (now.isNotEmpty &&
+          now.first.status.toLowerCase() == expected) {
+        _errorMessage = null;
+        return true;
+      }
+
+      _errorMessage = reason;
       return false;
     } finally {
-      _processingBookingId = null;
-
-      notifyListeners();
+      if (!_disposed && account == _accountVersion) {
+        _processingBookingId = null;
+        _notify();
+      }
     }
   }
 
   // ============================================================
-  // REJECT BOOKING
+  // PRESERVE FULL BOOKING DETAILS
   // ============================================================
 
-  Future<bool> rejectBooking(int bookingId) async {
-    if (actionLoading) return false;
-
-    _processingBookingId = bookingId;
-    _errorMessage = null;
-
-    notifyListeners();
-
-    try {
-      debugPrint(
-        'OWNER BOOKINGS: Rejecting booking $bookingId',
-      );
-
-      final updatedBooking =
-      await _api.rejectBooking(bookingId);
-
-      _replaceBooking(updatedBooking);
-
-      debugPrint(
-        'OWNER BOOKINGS: Booking $bookingId rejected',
-      );
-
-      return true;
-    } catch (e) {
-      debugPrint(
-        'OWNER BOOKINGS REJECT ERROR: $e',
-      );
-
-      _errorMessage = _cleanErrorMessage(e);
-
-      return false;
-    } finally {
-      _processingBookingId = null;
-
-      notifyListeners();
-    }
-  }
-
-  // ============================================================
-  // REPLACE UPDATED BOOKING
-  // ============================================================
-
-  void _replaceBooking(
-      OwnerBookingModel updatedBooking,
+  void _replaceBookingPreservingDetails(
+      OwnerBookingModel updated,
       ) {
     final index = _bookings.indexWhere(
-          (booking) => booking.id == updatedBooking.id,
+          (b) => b.id == updated.id,
     );
 
     if (index == -1) {
-      _bookings.insert(0, updatedBooking);
+      // Do not insert an incomplete response.
       return;
     }
 
-    _bookings[index] = updatedBooking;
+    final current = _bookings[index];
+
+    _bookings[index] = OwnerBookingModel.fromJson({
+      ...current.toJson(),
+      'status': updated.status,
+      'updated_at': updated.updatedAt,
+      'payment_status': updated.paymentStatus,
+      'payment_method': updated.paymentMethod,
+      'deposit_paid_at': updated.depositPaidAt,
+      'total_price': updated.totalPrice,
+      'deposit_amount': updated.depositAmount,
+      'remaining_amount': updated.remainingAmount,
+      'cancelled_at': updated.cancelledAt,
+    });
   }
 
   // ============================================================
-  // CLEAR BOOKINGS
+  // CLEAR ACCOUNT DATA
   // ============================================================
 
   void clearBookings() {
-    if (_bookings.isEmpty) return;
+    if (_disposed) return;
+
+    ++_accountVersion;
+    ++_requestVersion;
 
     _bookings.clear();
-    notifyListeners();
-  }
+    _loading = false;
+    _processingBookingId = null;
+    _errorMessage = null;
 
-  // ============================================================
-  // CLEAR ERROR
-  // ============================================================
+    _notify();
+  }
 
   void clearError() {
-    if (_errorMessage == null) return;
+    if (_disposed || _errorMessage == null) return;
 
     _errorMessage = null;
-    notifyListeners();
+    _notify();
   }
-
-  // ============================================================
-  // ERROR MESSAGE
-  // ============================================================
 
   String _cleanErrorMessage(Object error) {
     final message = error.toString();
 
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-
-    return message;
+    return message.startsWith('Exception: ')
+        ? message.substring('Exception: '.length)
+        : message;
   }
-
-  // ============================================================
-  // DISPOSE
-  // ============================================================
 
   @override
   void dispose() {
+    _disposed = true;
+    ++_accountVersion;
+    ++_requestVersion;
+
     _bookings.clear();
     super.dispose();
   }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'package:e7m/shared/localization/language_provider.dart';
 import 'package:e7m/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:e7m/features/auth/presentation/screens/verification/owner_otp_screen.dart';
+
 import 'verify_account_screen.dart';
 
 class VerificationMethodScreen extends StatefulWidget {
@@ -10,6 +12,7 @@ class VerificationMethodScreen extends StatefulWidget {
   final String email;
   final String phone;
   final String city;
+  final String role;
 
   const VerificationMethodScreen({
     super.key,
@@ -17,6 +20,7 @@ class VerificationMethodScreen extends StatefulWidget {
     required this.email,
     required this.phone,
     required this.city,
+    this.role = 'player',
   });
 
   @override
@@ -32,15 +36,20 @@ class _VerificationMethodScreenState
       AuthController authController,
       ) async {
     if (selectedMethod != 'email') {
-      final t = context.read<LanguageProvider>().translate;
+      final isArabic =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            t('phone_verification_unavailable'),
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic
+                  ? 'التحقق عبر SMS قريبًا.'
+                  : 'SMS verification is coming soon.',
+            ),
           ),
-        ),
-      );
+        );
 
       return;
     }
@@ -50,24 +59,41 @@ class _VerificationMethodScreenState
       email: widget.email,
       phone: widget.phone,
       city: widget.city,
-      role: 'player',
+      role: widget.role,
       verificationChannel: 'email',
     );
 
     if (!mounted) return;
 
     if (success) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VerifyAccountScreen(
-            fullName: widget.fullName,
-            email: widget.email,
-            phone: widget.phone,
-            city: widget.city,
+      if (widget.role.toLowerCase() == 'owner') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChangeNotifierProvider.value(
+              value: authController,
+              child: OwnerOtpScreen(
+                fullName: widget.fullName,
+                email: widget.email,
+                phone: widget.phone,
+                city: widget.city,
+              ),
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VerifyAccountScreen(
+              fullName: widget.fullName,
+              email: widget.email,
+              phone: widget.phone,
+              city: widget.city,
+            ),
+          ),
+        );
+      }
 
       return;
     }
@@ -75,9 +101,7 @@ class _VerificationMethodScreenState
     if (authController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            authController.errorMessage!,
-          ),
+          content: Text(authController.errorMessage!),
         ),
       );
     }
@@ -87,9 +111,9 @@ class _VerificationMethodScreenState
   Widget build(BuildContext context) {
     final t = context.watch<LanguageProvider>().translate;
     final authController = context.watch<AuthController>();
-
-    final isRtl =
-        Directionality.of(context) == TextDirection.rtl;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final isArabic =
+        Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
 
     return Scaffold(
       backgroundColor: const Color(0xffF7F7F3),
@@ -102,9 +126,7 @@ class _VerificationMethodScreenState
             Navigator.pop(context);
           },
           icon: Icon(
-            isRtl
-                ? Icons.arrow_forward_ios
-                : Icons.arrow_back_ios,
+            isRtl ? Icons.arrow_forward_ios : Icons.arrow_back_ios,
             size: 20,
             color: const Color(0xff1E1446),
           ),
@@ -165,12 +187,25 @@ class _VerificationMethodScreenState
               ),
               const SizedBox(height: 15),
               _buildMethodCard(
-                title: t('phone_verification'),
+                title: isArabic ? 'رسالة SMS' : 'SMS',
                 subtitle: widget.phone,
                 icon: Icons.phone_android,
                 value: 'phone',
                 isAvailable: false,
-                badgeText: 'COMING SOON',
+                badgeText: isArabic ? 'قريبًا' : 'COMING SOON',
+                onUnavailableTap: () {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isArabic
+                              ? 'التحقق عبر SMS قريبًا.'
+                              : 'SMS verification is coming soon.',
+                        ),
+                      ),
+                    );
+                },
               ),
               const SizedBox(height: 40),
               SizedBox(
@@ -182,8 +217,7 @@ class _VerificationMethodScreenState
                       : () => _handleContinue(authController),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff7CC000),
-                    disabledBackgroundColor:
-                    const Color(0xffB8D98A),
+                    disabledBackgroundColor: const Color(0xffB8D98A),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -223,9 +257,9 @@ class _VerificationMethodScreenState
     required String value,
     bool isAvailable = true,
     String? badgeText,
+    VoidCallback? onUnavailableTap,
   }) {
-    final isSelected =
-        isAvailable && selectedMethod == value;
+    final isSelected = isAvailable && selectedMethod == value;
 
     return GestureDetector(
       onTap: isAvailable
@@ -234,7 +268,7 @@ class _VerificationMethodScreenState
           selectedMethod = value;
         });
       }
-          : null,
+          : onUnavailableTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(18),

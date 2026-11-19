@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:e7m/features/player/notifications/data/models/notification_model.dart';
 import 'package:e7m/features/player/notifications/data/repositories/notification_repository.dart';
+
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
 
@@ -150,12 +151,17 @@ class NotificationProvider extends ChangeNotifier {
         notification.id == notificationId,
       );
 
+      final wasUnread = index != -1 &&
+          !_notifications[index].isRead;
+
       if (index != -1) {
         _notifications[index] =
             updatedNotification;
       }
 
-      if (_unreadCount > 0) {
+      if (wasUnread &&
+          updatedNotification.isRead &&
+          _unreadCount > 0) {
         _unreadCount--;
       }
 

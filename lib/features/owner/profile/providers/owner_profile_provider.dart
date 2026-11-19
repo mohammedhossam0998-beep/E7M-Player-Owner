@@ -1,5 +1,5 @@
-import 'dart:io';
 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'package:e7m/core/network/api_client.dart';
@@ -16,6 +16,8 @@ class OwnerProfileProvider extends ChangeNotifier {
 
   String? _errorMessage;
 
+  int _sessionVersion = 0;
+
   OwnerProfileModel? get profile => _profile;
 
   bool get isLoading => _isLoading;
@@ -28,18 +30,37 @@ class OwnerProfileProvider extends ChangeNotifier {
 
   bool get hasProfile => _profile != null;
 
+  // Clear account-specific data on logout.
+  // Ignore requests started before logout.
+  void clearProfile() {
+    _sessionVersion++;
+
+    _profile = null;
+    _errorMessage = null;
+
+    _isLoading = false;
+    _isUpdating = false;
+    _isUploadingImage = false;
+
+    notifyListeners();
+  }
+
   // ============================================================
   // LOAD PROFILE
   // ============================================================
 
   Future<bool> loadProfile() async {
+    final sessionVersion = _sessionVersion;
+
     _isLoading = true;
     _errorMessage = null;
 
     notifyListeners();
 
     try {
-      final response = await _apiClient.get('/owner/profile');
+      final response = await _apiClient.get(
+        '/owner/profile',
+      );
 
       if (response is! Map<String, dynamic>) {
         throw Exception('Invalid profile response');
@@ -55,20 +76,33 @@ class OwnerProfileProvider extends ChangeNotifier {
       final ownerData = response['owner'];
 
       if (ownerData is! Map<String, dynamic>) {
-        throw Exception('Owner profile data is missing');
+        throw Exception(
+          'Owner profile data is missing',
+        );
       }
 
-      _profile = OwnerProfileModel.fromJson(ownerData);
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
+
+      _profile = OwnerProfileModel.fromJson(
+        ownerData,
+      );
 
       return true;
     } catch (e) {
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
+
       _errorMessage = _cleanError(e);
 
       return false;
     } finally {
-      _isLoading = false;
-
-      notifyListeners();
+      if (sessionVersion == _sessionVersion) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -76,7 +110,11 @@ class OwnerProfileProvider extends ChangeNotifier {
   // UPLOAD PROFILE IMAGE
   // ============================================================
 
-  Future<bool> uploadProfileImage(File imageFile) async {
+  Future<bool> uploadProfileImage(
+      File imageFile,
+      ) async {
+    final sessionVersion = _sessionVersion;
+
     _isUploadingImage = true;
     _errorMessage = null;
 
@@ -84,7 +122,9 @@ class OwnerProfileProvider extends ChangeNotifier {
 
     try {
       if (!await imageFile.exists()) {
-        throw Exception('Selected image does not exist');
+        throw Exception(
+          'Selected image does not exist',
+        );
       }
 
       final response = await _apiClient.uploadFiles(
@@ -94,7 +134,9 @@ class OwnerProfileProvider extends ChangeNotifier {
       );
 
       if (response is! Map<String, dynamic>) {
-        throw Exception('Invalid image upload response');
+        throw Exception(
+          'Invalid image upload response',
+        );
       }
 
       if (response['success'] != true) {
@@ -103,10 +145,6 @@ class OwnerProfileProvider extends ChangeNotifier {
               'Failed to upload profile image',
         );
       }
-
-      // ----------------------------------------------------------
-      // GET NEW PROFILE IMAGE
-      // ----------------------------------------------------------
 
       final imageUrl =
       response['profile_image']?.toString();
@@ -117,12 +155,16 @@ class OwnerProfileProvider extends ChangeNotifier {
         );
       }
 
-      // ----------------------------------------------------------
-      // REFRESH PROFILE FROM SERVER
-      // ----------------------------------------------------------
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
 
       final profileResponse =
       await _apiClient.get('/owner/profile');
+
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
 
       if (profileResponse is Map<String, dynamic> &&
           profileResponse['success'] == true &&
@@ -135,13 +177,18 @@ class OwnerProfileProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
+
       _errorMessage = _cleanError(e);
 
       return false;
     } finally {
-      _isUploadingImage = false;
-
-      notifyListeners();
+      if (sessionVersion == _sessionVersion) {
+        _isUploadingImage = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -158,6 +205,8 @@ class OwnerProfileProvider extends ChangeNotifier {
     String? businessPhone,
     String? businessEmail,
   }) async {
+    final sessionVersion = _sessionVersion;
+
     _isUpdating = true;
     _errorMessage = null;
 
@@ -180,7 +229,9 @@ class OwnerProfileProvider extends ChangeNotifier {
       );
 
       if (response is! Map<String, dynamic>) {
-        throw Exception('Invalid update response');
+        throw Exception(
+          'Invalid update response',
+        );
       }
 
       if (response['success'] != true) {
@@ -193,25 +244,38 @@ class OwnerProfileProvider extends ChangeNotifier {
       final ownerData = response['owner'];
 
       if (ownerData is! Map<String, dynamic>) {
-        throw Exception('Updated owner profile is missing');
+        throw Exception(
+          'Updated owner profile is missing',
+        );
       }
 
-      _profile = OwnerProfileModel.fromJson(ownerData);
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
+
+      _profile = OwnerProfileModel.fromJson(
+        ownerData,
+      );
 
       return true;
     } catch (e) {
+      if (sessionVersion != _sessionVersion) {
+        return false;
+      }
+
       _errorMessage = _cleanError(e);
 
       return false;
     } finally {
-      _isUpdating = false;
-
-      notifyListeners();
+      if (sessionVersion == _sessionVersion) {
+        _isUpdating = false;
+        notifyListeners();
+      }
     }
   }
 
   // ============================================================
-  // REFRESH
+  // REFRESH PROFILE
   // ============================================================
 
   Future<bool> refreshProfile() async {
@@ -235,7 +299,9 @@ class OwnerProfileProvider extends ChangeNotifier {
     final message = error.toString();
 
     if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
+      return message.substring(
+        'Exception: '.length,
+      );
     }
 
     return message;

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:e7m/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:e7m/features/owner/session/owner_session_cleanup.dart';
+import 'package:e7m/features/owner/notifications/providers/notification_provider.dart';
+import 'package:e7m/features/owner/dashboard/presentation/providers/owner_dashboard_provider.dart';
 
 import 'package:e7m/features/owner/booking/presentation/screens/owner_bookings_screen.dart';
 import 'package:e7m/features/owner/profile/presentation/screens/edit_profile_screen.dart';
@@ -15,7 +18,7 @@ import 'package:e7m/features/owner/notifications/notifications_screen.dart';
 import 'package:e7m/features/owner/settings/privacy_policy_screen.dart';
 import 'package:e7m/features/owner/stadium/presentation/screens/owner_stadiums_screen.dart';
 import 'package:e7m/shared/localization/language_provider.dart';
-import 'package:e7m/shared/utils/image_url_helper.dart'; // <-- إضافة
+import 'package:e7m/shared/utils/image_url_helper.dart';
 
 class _AppColors {
   static const green = Color(0xff7CC000);
@@ -39,12 +42,25 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
       context.read<OwnerProfileProvider>().loadProfile();
+
+      final dashboard = context.read<OwnerDashboardProvider>();
+      if (!dashboard.isLoading) {
+        dashboard.loadDashboard();
+      }
     });
   }
 
   Future<void> _refresh() async {
-    await context.read<OwnerProfileProvider>().refreshProfile();
+    final profile = context.read<OwnerProfileProvider>();
+    final dashboard = context.read<OwnerDashboardProvider>();
+
+    await Future.wait([
+      profile.refreshProfile(),
+      dashboard.refreshDashboard(),
+    ]);
   }
 
   Future<void> _openEditProfile() async {
@@ -79,9 +95,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
             ),
           ),
           content: Text(
-            languageProvider.translate(
-              'logout_confirmation',
-            ),
+            languageProvider.translate('logout_confirmation'),
             style: const TextStyle(
               color: _AppColors.textSecondary,
               height: 1.5,
@@ -124,28 +138,35 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       },
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final auth = context.read<AuthController>();
 
-    await prefs.setBool(
-      'is_logged_in',
-      false,
-    );
+      await auth.logout();
+      OwnerSessionCleanup.clear(context);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/welcome',
-          (route) => false,
-    );
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/welcome',
+            (route) => false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر تسجيل الخروج. حاول مرة أخرى.'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-    context.watch<LanguageProvider>();
+    final languageProvider = context.watch<LanguageProvider>();
 
     return Scaffold(
       backgroundColor: _AppColors.background,
@@ -155,8 +176,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
           onRefresh: _refresh,
           child: Consumer<OwnerProfileProvider>(
             builder: (context, provider, _) {
-              if (provider.isLoading &&
-                  !provider.hasProfile) {
+              if (provider.isLoading && !provider.hasProfile) {
                 return const _LoadingView();
               }
 
@@ -170,170 +190,88 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               final profile = provider.profile!;
 
               return CustomScrollView(
-                physics:
-                const AlwaysScrollableScrollPhysics(
+                physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        20,
-                        12,
-                        20,
-                        0,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: Column(
                         children: [
-                          _buildTopBar(
-                            languageProvider,
-                          ),
-
+                          _buildTopBar(languageProvider),
                           const SizedBox(height: 20),
-
-                          _buildProfileHeader(
-                            profile,
-                            languageProvider,
-                          ),
-
+                          _buildProfileHeader(profile, languageProvider),
                           const SizedBox(height: 22),
-
-                          _buildStats(
-                            languageProvider,
-                          ),
-
+                          _buildStats(languageProvider),
                           const SizedBox(height: 26),
-
                           _buildSectionTitle(
                             languageProvider.translate(
                               'personal_information',
                             ),
                           ),
-
                           const SizedBox(height: 12),
-
                           _buildInformationCard([
                             _InfoRow(
-                              icon:
-                              Icons.person_outline_rounded,
-                              title:
-                              languageProvider.translate(
-                                'full_name',
-                              ),
-                              value:
-                              _valueOrDash(
-                                profile.fullName,
-                              ),
+                              icon: Icons.person_outline_rounded,
+                              title: languageProvider.translate('full_name'),
+                              value: _valueOrDash(profile.fullName),
                             ),
                             _InfoRow(
-                              icon:
-                              Icons.email_outlined,
-                              title:
-                              languageProvider.translate(
-                                'email',
-                              ),
-                              value:
-                              _valueOrDash(
-                                profile.email,
-                              ),
+                              icon: Icons.email_outlined,
+                              title: languageProvider.translate('email'),
+                              value: _valueOrDash(profile.email),
                             ),
                             _InfoRow(
-                              icon:
-                              Icons.phone_outlined,
-                              title:
-                              languageProvider.translate(
-                                'phone_number',
-                              ),
-                              value:
-                              _valueOrDash(
-                                profile.phone,
-                              ),
+                              icon: Icons.phone_outlined,
+                              title: languageProvider.translate('phone_number'),
+                              value: _valueOrDash(profile.phone),
                             ),
                           ]),
-
                           const SizedBox(height: 22),
-
                           _buildSectionTitle(
                             languageProvider.translate(
                               'business_information',
                             ),
                           ),
-
                           const SizedBox(height: 12),
-
                           _buildInformationCard([
                             _InfoRow(
-                              icon:
-                              Icons.business_outlined,
-                              title:
-                              languageProvider.translate(
+                              icon: Icons.business_outlined,
+                              title: languageProvider.translate(
                                 'business_name',
                               ),
-                              value:
-                              _valueOrDash(
-                                profile.businessName,
-                              ),
+                              value: _valueOrDash(profile.businessName),
                             ),
                             _InfoRow(
-                              icon:
-                              Icons.phone_outlined,
-                              title:
-                              languageProvider.translate(
+                              icon: Icons.phone_outlined,
+                              title: languageProvider.translate(
                                 'business_phone',
                               ),
-                              value:
-                              _valueOrDash(
-                                profile.businessPhone,
-                              ),
+                              value: _valueOrDash(profile.businessPhone),
                             ),
                             _InfoRow(
-                              icon:
-                              Icons.alternate_email_rounded,
-                              title:
-                              languageProvider.translate(
+                              icon: Icons.alternate_email_rounded,
+                              title: languageProvider.translate(
                                 'business_email',
                               ),
-                              value:
-                              _valueOrDash(
-                                profile.businessEmail,
-                              ),
+                              value: _valueOrDash(profile.businessEmail),
                             ),
                           ]),
-
                           const SizedBox(height: 22),
-
                           _buildSectionTitle(
-                            languageProvider.translate(
-                              'quick_actions',
-                            ),
+                            languageProvider.translate('quick_actions'),
                           ),
-
                           const SizedBox(height: 12),
-
-                          _buildQuickActions(
-                            languageProvider,
-                          ),
-
+                          _buildQuickActions(languageProvider),
                           const SizedBox(height: 26),
-
                           _buildSectionTitle(
-                            languageProvider.translate(
-                              'account',
-                            ),
+                            languageProvider.translate('account'),
                           ),
-
                           const SizedBox(height: 12),
-
-                          _buildSettings(
-                            languageProvider,
-                          ),
-
+                          _buildSettings(languageProvider),
                           const SizedBox(height: 18),
-
-                          _buildLogoutButton(
-                            languageProvider,
-                          ),
-
+                          _buildLogoutButton(languageProvider),
                           const SizedBox(height: 32),
                         ],
                       ),
@@ -348,9 +286,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildTopBar(
-      LanguageProvider languageProvider,
-      ) {
+  Widget _buildTopBar(LanguageProvider languageProvider) {
     return Row(
       children: [
         Expanded(
@@ -363,18 +299,13 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
             ),
           ),
         ),
-
         Consumer<OwnerProfileProvider>(
           builder: (context, provider, _) {
             return IconButton(
-              onPressed: provider.isLoading
-                  ? null
-                  : _refresh,
+              onPressed: provider.isLoading ? null : _refresh,
               style: IconButton.styleFrom(
                 backgroundColor: Colors.white,
-                side: const BorderSide(
-                  color: _AppColors.border,
-                ),
+                side: const BorderSide(color: _AppColors.border),
               ),
               icon: const Icon(
                 Icons.refresh_rounded,
@@ -394,11 +325,6 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       ) {
     ImageProvider? image;
 
-    // === التعديل هنا ===
-    // بدل ما نستخدم profile.profileImage مباشرة في NetworkImage
-    // (وهو ممكن يكون مسار نسبي زي /uploads/... مش رابط كامل)،
-    // بنمرره على ImageUrlHelper.build عشان يبني الرابط الكامل الصح
-    // ويشيل أي سلاش زيادة (//) في الأول.
     final imageUrl = ImageUrlHelper.build(
       profile.profileImage?.toString(),
     );
@@ -406,12 +332,8 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     if (imageUrl.isNotEmpty) {
       image = NetworkImage(imageUrl);
     }
-    // === نهاية التعديل ===
 
-    final name = _valueOrDash(
-      profile.fullName,
-    );
-
+    final name = _valueOrDash(profile.fullName);
     final initial = name != '—'
         ? name.substring(0, 1).toUpperCase()
         : 'O';
@@ -422,9 +344,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: _AppColors.border,
-        ),
+        border: Border.all(color: _AppColors.border),
       ),
       child: Column(
         children: [
@@ -436,15 +356,13 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _AppColors.green
-                        .withValues(alpha: .22),
+                    color: _AppColors.green.withValues(alpha: .22),
                     width: 2,
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundColor:
-                  const Color(0xffEEF8E1),
+                  backgroundColor: const Color(0xffEEF8E1),
                   backgroundImage: image,
                   child: image == null
                       ? Text(
@@ -458,7 +376,6 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                       : null,
                 ),
               ),
-
               Positioned(
                 right: -2,
                 bottom: 2,
@@ -468,10 +385,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                   decoration: BoxDecoration(
                     color: _AppColors.green,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: const Icon(
                     Icons.verified_rounded,
@@ -482,9 +396,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Text(
             name,
             textAlign: TextAlign.center,
@@ -494,9 +406,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 5),
-
           Text(
             _valueOrDash(profile.email),
             textAlign: TextAlign.center,
@@ -506,17 +416,14 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-
           const SizedBox(height: 14),
-
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 7,
             ),
             decoration: BoxDecoration(
-              color: _AppColors.green
-                  .withValues(alpha: .10),
+              color: _AppColors.green.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Row(
@@ -529,9 +436,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  languageProvider.translate(
-                    'verified_stadium_owner',
-                  ),
+                  languageProvider.translate('verified_stadium_owner'),
                   style: const TextStyle(
                     color: _AppColors.green,
                     fontSize: 12.5,
@@ -541,28 +446,19 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
           SizedBox(
             width: double.infinity,
             height: 46,
             child: OutlinedButton.icon(
               onPressed: _openEditProfile,
-              icon: const Icon(
-                Icons.edit_outlined,
-                size: 18,
-              ),
+              icon: const Icon(Icons.edit_outlined, size: 18),
               label: Text(
-                languageProvider.translate(
-                  'edit_profile',
-                ),
+                languageProvider.translate('edit_profile'),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _AppColors.navy,
-                side: const BorderSide(
-                  color: _AppColors.border,
-                ),
+                side: const BorderSide(color: _AppColors.border),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(13),
                 ),
@@ -577,73 +473,76 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildStats(
-      LanguageProvider languageProvider,
-      ) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.stadium_outlined,
-            title: languageProvider.translate(
-              'stadiums',
-            ),
-            value: '—',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  const OwnerStadiumsScreen(),
+  Widget _buildStats(LanguageProvider languageProvider) {
+    return Consumer<OwnerDashboardProvider>(
+      builder: (context, dashboard, _) {
+        final waiting = dashboard.isLoading && !dashboard.hasData;
+        final unavailable =
+            dashboard.errorMessage != null && !dashboard.hasData;
+        final valuePlaceholder = waiting ? '...' : '—';
+        final showData = dashboard.hasData && !unavailable;
+
+        return Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.stadium_outlined,
+                title: languageProvider.translate('stadiums'),
+                value: showData
+                    ? dashboard.totalPitches.toString()
+                    : valuePlaceholder,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const OwnerStadiumsScreen(),
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: _StatCard(
-            icon: Icons.book_online_outlined,
-            title: languageProvider.translate(
-              'bookings',
+              ),
             ),
-            value: '—',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  const OwnerBookingsScreen(),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.book_online_outlined,
+                title: languageProvider.translate('bookings'),
+                value: showData
+                    ? dashboard.totalBookings.toString()
+                    : valuePlaceholder,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const OwnerBookingsScreen(),
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: _StatCard(
-            icon: Icons.payments_outlined,
-            title: languageProvider.translate(
-              'revenue',
+              ),
             ),
-            value: '—',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  const RevenueScreen(),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.payments_outlined,
+                title: languageProvider.translate('revenue'),
+                value: showData
+                    ? '${_formatStatRevenue(dashboard.totalRevenue)} ${languageProvider.translate('egp')}'
+                    : valuePlaceholder,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const RevenueScreen(),
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  String _formatStatRevenue(double revenue) {
+    if (revenue == revenue.roundToDouble()) {
+      return revenue.toStringAsFixed(0);
+    }
+
+    return revenue.toStringAsFixed(2);
   }
 
   Widget _buildSectionTitle(String title) {
@@ -660,9 +559,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildInformationCard(
-      List<_InfoRow> rows,
-      ) {
+  Widget _buildInformationCard(List<_InfoRow> rows) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -672,15 +569,12 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: _AppColors.border,
-        ),
+        border: Border.all(color: _AppColors.border),
       ),
       child: Column(
         children: [
           for (int i = 0; i < rows.length; i++) ...[
             _buildInfoRow(rows[i]),
-
             if (i != rows.length - 1)
               const Divider(
                 height: 1,
@@ -694,17 +588,14 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
 
   Widget _buildInfoRow(_InfoRow row) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 14,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: _AppColors.green
-                  .withValues(alpha: .10),
+              color: _AppColors.green.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -713,13 +604,10 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               size: 20,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   row.title,
@@ -729,9 +617,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   row.value,
                   maxLines: 2,
@@ -750,63 +636,48 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildQuickActions(
-      LanguageProvider languageProvider,
-      ) {
+  Widget _buildQuickActions(LanguageProvider languageProvider) {
     return Row(
       children: [
         Expanded(
           child: _ActionCard(
             icon: Icons.stadium_outlined,
-            title: languageProvider.translate(
-              'my_stadiums',
-            ),
+            title: languageProvider.translate('my_stadiums'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const OwnerStadiumsScreen(),
+                  builder: (_) => const OwnerStadiumsScreen(),
                 ),
               );
             },
           ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: _ActionCard(
             icon: Icons.reviews_outlined,
-            title: languageProvider.translate(
-              'reviews',
-            ),
+            title: languageProvider.translate('reviews'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const ReviewsScreen(),
+                  builder: (_) => const ReviewsScreen(),
                 ),
               );
             },
           ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: _ActionCard(
             icon: Icons.bar_chart_rounded,
-            title: languageProvider.translate(
-              'revenue',
-            ),
+            title: languageProvider.translate('revenue'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const RevenueScreen(),
+                  builder: (_) => const RevenueScreen(),
                 ),
               );
             },
@@ -816,112 +687,85 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildSettings(
-      LanguageProvider languageProvider,
-      ) {
+  Widget _buildSettings(LanguageProvider languageProvider) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: _AppColors.border,
-        ),
+        border: Border.all(color: _AppColors.border),
       ),
       child: Column(
         children: [
           _SettingTile(
             icon: Icons.notifications_none_rounded,
-            title: languageProvider.translate(
-              'notifications',
-            ),
+            title: languageProvider.translate('notifications'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const NotificationsScreen(),
+                  builder: (_) => const NotificationsScreen(),
                 ),
               );
             },
           ),
-
           _SettingTile(
             icon: Icons.lock_outline_rounded,
-            title: languageProvider.translate(
-              'change_password',
-            ),
+            title: languageProvider.translate('change_password'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const ChangePasswordScreen(),
+                  builder: (_) => const ChangePasswordScreen(),
                 ),
               );
             },
           ),
-
           _SettingTile(
             icon: Icons.language_rounded,
-            title: languageProvider.translate(
-              'language',
-            ),
+            title: languageProvider.translate('language'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const LanguageScreen(),
+                  builder: (_) => const LanguageScreen(),
                 ),
               );
             },
           ),
-
           _SettingTile(
             icon: Icons.privacy_tip_outlined,
-            title: languageProvider.translate(
-              'privacy_policy',
-            ),
+            title: languageProvider.translate('privacy_policy'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const PrivacyPolicyScreen(),
+                  builder: (_) => const PrivacyPolicyScreen(),
                 ),
               );
             },
           ),
-
           _SettingTile(
             icon: Icons.help_outline_rounded,
-            title: languageProvider.translate(
-              'help_support',
-            ),
+            title: languageProvider.translate('help_support'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const HelpSupportScreen(),
+                  builder: (_) => const HelpSupportScreen(),
                 ),
               );
             },
           ),
-
           _SettingTile(
             icon: Icons.info_outline_rounded,
-            title: languageProvider.translate(
-              'about_e7m',
-            ),
+            title: languageProvider.translate('about_e7m'),
             showDivider: false,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const AboutScreen(),
+                  builder: (_) => const AboutScreen(),
                 ),
               );
             },
@@ -931,9 +775,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildLogoutButton(
-      LanguageProvider languageProvider,
-      ) {
+  Widget _buildLogoutButton(LanguageProvider languageProvider) {
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -955,8 +797,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
           side: BorderSide(
             color: Colors.red.withValues(alpha: .20),
           ),
-          backgroundColor:
-          Colors.red.withValues(alpha: .04),
+          backgroundColor: Colors.red.withValues(alpha: .04),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -1006,9 +847,7 @@ class _StatCard extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(17),
-            border: Border.all(
-              color: _AppColors.border,
-            ),
+            border: Border.all(color: _AppColors.border),
           ),
           child: Column(
             children: [
@@ -1017,20 +856,23 @@ class _StatCard extends StatelessWidget {
                 color: _AppColors.green,
                 size: 22,
               ),
-
               const SizedBox(height: 8),
-
-              Text(
-                value,
-                style: const TextStyle(
-                  color: _AppColors.navy,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: _AppColors.navy,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
-
               const SizedBox(height: 3),
-
               Text(
                 title,
                 maxLines: 1,
@@ -1077,22 +919,17 @@ class _ActionCard extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _AppColors.border,
-            ),
+            border: Border.all(color: _AppColors.border),
           ),
           child: Column(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: _AppColors.green
-                      .withValues(alpha: .10),
-                  borderRadius:
-                  BorderRadius.circular(10),
+                  color: _AppColors.green.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
@@ -1100,9 +937,7 @@ class _ActionCard extends StatelessWidget {
                   size: 19,
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Text(
                 title,
                 maxLines: 1,
@@ -1141,8 +976,7 @@ class _SettingTile extends StatelessWidget {
       children: [
         ListTile(
           onTap: onTap,
-          contentPadding:
-          const EdgeInsets.symmetric(
+          contentPadding: const EdgeInsets.symmetric(
             horizontal: 15,
             vertical: 2,
           ),
@@ -1150,8 +984,7 @@ class _SettingTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: _AppColors.green
-                  .withValues(alpha: .10),
+              color: _AppColors.green.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
@@ -1174,7 +1007,6 @@ class _SettingTile extends StatelessWidget {
             size: 14,
           ),
         ),
-
         if (showDivider)
           const Divider(
             height: 1,
@@ -1224,8 +1056,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      physics:
-      const AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
           height: MediaQuery.sizeOf(context).height * .65,
@@ -1239,8 +1070,7 @@ class _ErrorView extends StatelessWidget {
                     width: 70,
                     height: 70,
                     decoration: BoxDecoration(
-                      color: Colors.grey
-                          .withValues(alpha: .10),
+                      color: Colors.grey.withValues(alpha: .10),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -1249,9 +1079,7 @@ class _ErrorView extends StatelessWidget {
                       size: 34,
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   Text(
                     message ?? 'Something went wrong',
                     textAlign: TextAlign.center,
@@ -1261,9 +1089,7 @@ class _ErrorView extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   TextButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import 'package:e7m/features/auth/presentation/controllers/auth_controller.dart';
-import '../verification/owner_otp_screen.dart';
+import '../verification/verification_method_screen.dart';
 
 class OwnerRegistrationScreen extends StatefulWidget {
   const OwnerRegistrationScreen({super.key});
@@ -89,13 +87,7 @@ class _OwnerRegistrationScreenState
     );
   }
 
-  // ============================================================
-  // OWNER REGISTER
-  // ============================================================
-
-  Future<void> _registerOwner(
-      AuthController authController,
-      ) async {
+  void _continueToVerification() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -105,100 +97,37 @@ class _OwnerRegistrationScreenState
     final phone = phoneController.text.trim();
     final city = selectedCity!.trim();
 
-    // ==========================================================
-    // REGISTER OWNER
-    // ==========================================================
-
-    final success = await authController.register(
-      name: fullName,
-      email: email,
-      phone: phone,
-      city: city,
-
-      // IMPORTANT:
-      // This registration belongs to an Owner.
-      role: 'owner',
-
-      // Owner will verify through email OTP.
-      verificationChannel: 'email',
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    // ==========================================================
-    // REGISTER FAILED
-    // ==========================================================
-
-    if (!success) {
-      final message =
-          authController.errorMessage ??
-              'Registration failed. Please try again.';
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
-
-      return;
-    }
-
-    // ==========================================================
-    // REGISTRATION SUCCESS
-    // ==========================================================
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: authController,
-          child: OwnerOtpScreen(
-            fullName: fullName,
-            email: email,
-            phone: phone,
-            city: city,
-          ),
+        builder: (_) => VerificationMethodScreen(
+          role: 'owner',
+          fullName: fullName,
+          email: email,
+          phone: phone,
+          city: city,
         ),
       ),
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
-
   @override
   Widget build(BuildContext context) {
-    final authController =
-    context.watch<AuthController>();
-
-    final isLoading =
-        authController.isLoading;
-
     return Scaffold(
       backgroundColor: const Color(0xffF7F8FA),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-
           child: Form(
             key: _formKey,
-
             child: Column(
               children: <Widget>[
                 const SizedBox(height: 20),
-
                 Image.asset(
                   'assets/images/logo.png',
                   width: 90,
                 ),
-
                 const SizedBox(height: 25),
-
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -207,8 +136,7 @@ class _OwnerRegistrationScreenState
                   decoration: BoxDecoration(
                     color: const Color(0xff7CC000)
                         .withValues(alpha: .1),
-                    borderRadius:
-                    BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
                     'Step 1 of 5',
@@ -218,9 +146,7 @@ class _OwnerRegistrationScreenState
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 const Text(
                   'Register as Stadium Owner',
                   textAlign: TextAlign.center,
@@ -230,9 +156,7 @@ class _OwnerRegistrationScreenState
                     color: Color(0xff1E1446),
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 const Text(
                   'Create your owner account to start managing your stadium bookings.',
                   textAlign: TextAlign.center,
@@ -241,46 +165,33 @@ class _OwnerRegistrationScreenState
                     height: 1.4,
                   ),
                 ),
-
                 const SizedBox(height: 35),
-
                 TextFormField(
-                  controller:
-                  fullNameController,
-                  textInputAction:
-                  TextInputAction.next,
+                  controller: fullNameController,
+                  textInputAction: TextInputAction.next,
                   decoration: inputDecoration(
                     hint: 'Full Name',
-                    icon:
-                    Icons.person_outline,
+                    icon: Icons.person_outline,
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().length < 3) {
+                    if (value == null || value.trim().length < 3) {
                       return 'Enter valid full name';
                     }
 
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 18),
-
                 TextFormField(
-                  controller:
-                  emailController,
-                  keyboardType:
-                  TextInputType.emailAddress,
-                  textInputAction:
-                  TextInputAction.next,
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: inputDecoration(
                     hint: 'Email Address',
-                    icon:
-                    Icons.email_outlined,
+                    icon: Icons.email_outlined,
                   ),
                   validator: (value) {
-                    final email =
-                        value?.trim() ?? '';
+                    final email = value?.trim() ?? '';
 
                     if (email.isEmpty ||
                         !email.contains('@') ||
@@ -291,24 +202,17 @@ class _OwnerRegistrationScreenState
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 18),
-
                 TextFormField(
-                  controller:
-                  phoneController,
-                  keyboardType:
-                  TextInputType.phone,
-                  textInputAction:
-                  TextInputAction.next,
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                   decoration: inputDecoration(
                     hint: 'Phone Number',
-                    icon:
-                    Icons.phone_outlined,
+                    icon: Icons.phone_outlined,
                   ),
                   validator: (value) {
-                    final phone =
-                        value?.trim() ?? '';
+                    final phone = value?.trim() ?? '';
 
                     if (phone.length < 11) {
                       return 'Enter valid phone';
@@ -317,100 +221,56 @@ class _OwnerRegistrationScreenState
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 18),
-
                 DropdownButtonFormField<String>(
                   value: selectedCity,
-
-                  decoration:
-                  inputDecoration(
+                  decoration: inputDecoration(
                     hint: 'Select City',
-                    icon: Icons
-                        .location_city_outlined,
+                    icon: Icons.location_city_outlined,
                   ),
-
                   items: cities.map((city) {
                     return DropdownMenuItem(
                       value: city,
                       child: Text(city),
                     );
                   }).toList(),
-
-                  onChanged: isLoading
-                      ? null
-                      : (value) {
+                  onChanged: (value) {
                     setState(() {
-                      selectedCity =
-                          value;
+                      selectedCity = value;
                     });
                   },
-
                   validator: (value) {
-                    if (value == null ||
-                        value.isEmpty) {
+                    if (value == null || value.isEmpty) {
                       return 'Please select city';
                     }
 
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 30),
-
                 SizedBox(
                   width: double.infinity,
                   height: 56,
-
                   child: ElevatedButton(
-                    style:
-                    ElevatedButton.styleFrom(
-                      backgroundColor:
-                      const Color(0xff7CC000),
-                      disabledBackgroundColor:
-                      Colors.grey.shade400,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff7CC000),
+                      disabledBackgroundColor: Colors.grey.shade400,
                       elevation: 0,
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(
-                          14,
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                      _registerOwner(
-                        authController,
-                      );
-                    },
-
-                    child: isLoading
-                        ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child:
-                      CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color:
-                        Colors.white,
-                      ),
-                    )
-                        : const Text(
+                    onPressed: _continueToVerification,
+                    child: const Text(
                       'Continue',
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                        FontWeight.bold,
-                        color:
-                        Colors.white,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
               ],
             ),

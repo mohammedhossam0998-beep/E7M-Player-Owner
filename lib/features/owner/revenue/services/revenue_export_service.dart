@@ -1,38 +1,13 @@
-import 'dart:io';
-
 import 'package:excel/excel.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'package:e7m/shared/localization/language_provider.dart';
 
 import '../providers/revenue_provider.dart';
-
-// ============================================================
-// REVENUE EXPORT SERVICE
-//
-// Builds a comprehensive revenue report (Overview + last 7 days
-// chart data + full transactions list) and saves it either as
-// an Excel (.xlsx) or PDF (.pdf) file inside the app's temporary
-// directory, ready to be shared via share_plus.
-//
-// NOTE (Arabic PDF text):
-// The `pdf` package does not ship with an Arabic-capable font.
-// To render Arabic labels correctly in the PDF, add a font that
-// supports Arabic glyphs (e.g. Cairo, Noto Kufi Arabic, Tajawal)
-// to your project and register it in pubspec.yaml:
-//
-//   flutter:
-//     assets:
-//       - assets/fonts/Cairo-Regular.ttf
-//
-// If the font asset below isn't found, the service silently
-// falls back to the default PDF font (Arabic glyphs will not
-// render correctly in that case, but the export will not crash).
-// ============================================================
+import 'revenue_export_delivery.dart';
 
 class RevenueExportService {
   RevenueExportService._();
@@ -40,11 +15,7 @@ class RevenueExportService {
   static const String _arabicFontAssetPath =
       'assets/fonts/Cairo-Regular.ttf';
 
-  // ==========================================================
-  // PUBLIC: EXPORT TO EXCEL
-  // ==========================================================
-
-  static Future<File> exportToExcel({
+  static Future<void> exportToExcel({
     required RevenueProvider provider,
     required LanguageProvider languageProvider,
   }) async {
@@ -53,34 +24,23 @@ class RevenueExportService {
     final sheetName = languageProvider.translate('revenue_report');
     final Sheet sheet = excel[sheetName];
 
-    // Excel.createExcel() ships with a default "Sheet1"; remove it
-    // once our named sheet exists to avoid an extra empty tab.
     if (excel.sheets.containsKey('Sheet1') && sheetName != 'Sheet1') {
       excel.delete('Sheet1');
     }
 
-    int row = 0;
-
     void writeTitle(String text) {
       sheet.appendRow([TextCellValue(text)]);
-      row++;
     }
 
     void writeRow(List<String> values) {
       sheet.appendRow(
-        values.map((v) => TextCellValue(v)).toList(),
+        values.map((value) => TextCellValue(value)).toList(),
       );
-      row++;
     }
 
     void writeBlank() {
       sheet.appendRow([]);
-      row++;
     }
-
-    // ------------------------------------------------------
-    // OVERVIEW
-    // ------------------------------------------------------
 
     writeTitle(languageProvider.translate('overview'));
 
@@ -131,10 +91,6 @@ class RevenueExportService {
 
     writeBlank();
 
-    // ------------------------------------------------------
-    // CHART DATA (LAST 7 DAYS)
-    // ------------------------------------------------------
-
     writeTitle(languageProvider.translate('chart_last_7_days'));
 
     writeRow([
@@ -143,7 +99,6 @@ class RevenueExportService {
     ]);
 
     final chartData = provider.last7DaysRevenue;
-
     final sortedDates = chartData.keys.toList()
       ..sort((a, b) => a.compareTo(b));
 
@@ -156,15 +111,16 @@ class RevenueExportService {
 
     writeBlank();
 
-    // ------------------------------------------------------
-    // TRANSACTIONS (ALL)
-    // ------------------------------------------------------
-
     writeTitle(languageProvider.translate('transactions'));
+
+    final isArabic =
+        languageProvider.currentLocale.languageCode == 'ar';
 
     writeRow([
       languageProvider.translate('player'),
       languageProvider.translate('date'),
+      isArabic ? 'مصدر الدفع' : 'Payment source',
+      isArabic ? 'رقم المرجع' : 'Reference ID',
       languageProvider.translate('amount'),
       languageProvider.translate('status'),
     ]);
@@ -173,10 +129,10 @@ class RevenueExportService {
       writeRow([
         transaction.playerName,
         DateFormat('dd MMM yyyy').format(transaction.date),
+        _sourceLabel(transaction.sourceType, isArabic),
+        transaction.sourceReferenceId,
         _amount(transaction.amount),
-        languageProvider.translate(
-          transaction.status.toLowerCase(),
-        ),
+        languageProvider.translate(transaction.status.toLowerCase()),
       ]);
     }
 
@@ -186,19 +142,16 @@ class RevenueExportService {
       throw Exception('Failed to generate Excel file');
     }
 
-    final file = await _writeBytes(
+    await deliverRevenueExport(
       bytes: bytes,
-      extension: 'xlsx',
+      fileName: _fileName('xlsx'),
+      mimeType:
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      shareText: languageProvider.translate('revenue_report'),
     );
-
-    return file;
   }
 
-  // ==========================================================
-  // PUBLIC: EXPORT TO PDF
-  // ==========================================================
-
-  static Future<File> exportToPdf({
+  static Future<void> exportToPdf({
     required RevenueProvider provider,
     required LanguageProvider languageProvider,
   }) async {
@@ -217,9 +170,7 @@ class RevenueExportService {
     isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr;
 
     final dateFormat = DateFormat('dd MMM yyyy');
-
     final chartData = provider.last7DaysRevenue;
-
     final sortedDates = chartData.keys.toList()
       ..sort((a, b) => a.compareTo(b));
 
@@ -236,10 +187,6 @@ class RevenueExportService {
           ),
         ),
         build: (context) => [
-          // --------------------------------------------------
-          // OVERVIEW
-          // --------------------------------------------------
-
           pw.SizedBox(height: 12),
 
           pw.Text(
@@ -302,10 +249,6 @@ class RevenueExportService {
 
           pw.SizedBox(height: 20),
 
-          // --------------------------------------------------
-          // CHART DATA (LAST 7 DAYS)
-          // --------------------------------------------------
-
           pw.Text(
             languageProvider.translate('chart_last_7_days'),
             style: pw.TextStyle(
@@ -336,10 +279,6 @@ class RevenueExportService {
 
           pw.SizedBox(height: 20),
 
-          // --------------------------------------------------
-          // TRANSACTIONS (ALL)
-          // --------------------------------------------------
-
           pw.Text(
             languageProvider.translate('transactions'),
             style: pw.TextStyle(
@@ -357,6 +296,8 @@ class RevenueExportService {
             headers: [
               languageProvider.translate('player'),
               languageProvider.translate('date'),
+              isArabic ? 'مصدر الدفع' : 'Payment source',
+              isArabic ? 'رقم المرجع' : 'Reference ID',
               languageProvider.translate('amount'),
               languageProvider.translate('status'),
             ],
@@ -365,6 +306,8 @@ class RevenueExportService {
                   (transaction) => [
                 transaction.playerName,
                 dateFormat.format(transaction.date),
+                _sourceLabel(transaction.sourceType, isArabic),
+                transaction.sourceReferenceId,
                 _amount(transaction.amount),
                 languageProvider.translate(
                   transaction.status.toLowerCase(),
@@ -379,20 +322,27 @@ class RevenueExportService {
 
     final bytes = await pdf.save();
 
-    final file = await _writeBytes(
+    await deliverRevenueExport(
       bytes: bytes,
-      extension: 'pdf',
+      fileName: _fileName('pdf'),
+      mimeType: 'application/pdf',
+      shareText: languageProvider.translate('revenue_report'),
     );
-
-    return file;
   }
-
-  // ==========================================================
-  // HELPERS
-  // ==========================================================
 
   static String _amount(double value) {
     return '${NumberFormat('#,##0.00').format(value)} EGP';
+  }
+
+  static String _sourceLabel(String source, bool isArabic) {
+    switch (source) {
+      case 'academy':
+        return isArabic ? 'الأكاديمية' : 'Academy';
+      case 'competition':
+        return isArabic ? 'البطولة' : 'Tournament';
+      default:
+        return isArabic ? 'حجز ملعب' : 'Stadium booking';
+    }
   }
 
   static Future<pw.Font?> _loadArabicFont() async {
@@ -400,28 +350,12 @@ class RevenueExportService {
       final fontData = await rootBundle.load(_arabicFontAssetPath);
       return pw.Font.ttf(fontData);
     } catch (_) {
-      // Font asset not found/registered — fall back to the
-      // default PDF font. Arabic glyphs may not render correctly
-      // in that case, but the export itself will not crash.
       return null;
     }
   }
 
-  static Future<File> _writeBytes({
-    required List<int> bytes,
-    required String extension,
-  }) async {
-    final directory = await getTemporaryDirectory();
-
+  static String _fileName(String extension) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    final path =
-        '${directory.path}/revenue_report_$timestamp.$extension';
-
-    final file = File(path);
-
-    await file.writeAsBytes(bytes, flush: true);
-
-    return file;
+    return 'revenue_report_$timestamp.$extension';
   }
 }

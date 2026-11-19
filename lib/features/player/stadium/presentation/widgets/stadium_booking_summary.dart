@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:e7m/shared/localization/language_provider.dart';
 
 class StadiumBookingSummary extends StatelessWidget {
   final String stadiumName;
@@ -26,6 +28,12 @@ class StadiumBookingSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = context
+        .watch<LanguageProvider>()
+        .locale
+        .languageCode ==
+        'ar';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -44,9 +52,9 @@ class StadiumBookingSummary extends StatelessWidget {
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Booking Summary',
-            style: TextStyle(
+          Text(
+            isArabic ? 'ملخص الحجز' : 'Booking Summary',
+            style: const TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.w900,
               color: darkNavy,
@@ -57,33 +65,33 @@ class StadiumBookingSummary extends StatelessWidget {
 
           _Row(
             icon: Icons.stadium_outlined,
-            title: 'Stadium',
+            title: isArabic ? 'الملعب' : 'Stadium',
             value: stadiumName,
           ),
 
           _Row(
             icon: Icons.calendar_today_outlined,
-            title: 'Date',
+            title: isArabic ? 'التاريخ' : 'Date',
             value: date,
           ),
 
           _Row(
             icon: Icons.access_time,
-            title: 'Time',
+            title: isArabic ? 'الوقت' : 'Time',
             value: time,
           ),
 
           const Divider(height: 26),
 
           _PriceRow(
-            title: 'Total price',
+            title: isArabic ? 'السعر الإجمالي' : 'Total price',
             value: price,
           ),
 
           const SizedBox(height: 8),
 
           _PriceRow(
-            title: 'Deposit',
+            title: isArabic ? 'العربون' : 'Deposit',
             value: deposit,
             highlight: true,
           ),
@@ -91,7 +99,7 @@ class StadiumBookingSummary extends StatelessWidget {
           const SizedBox(height: 8),
 
           _PriceRow(
-            title: 'Remaining',
+            title: isArabic ? 'المتبقي' : 'Remaining',
             value: remaining,
           ),
         ],
@@ -164,6 +172,12 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = context
+        .watch<LanguageProvider>()
+        .locale
+        .languageCode ==
+        'ar';
+
     return Row(
       children: [
         Expanded(
@@ -178,7 +192,7 @@ class _PriceRow extends StatelessWidget {
         ),
 
         Text(
-          '${value.toStringAsFixed(0)} EGP',
+          '${value.toStringAsFixed(0)} ${isArabic ? 'جنيه' : 'EGP'}',
           style: TextStyle(
             color: highlight
                 ? const Color(0xFF7CC000)

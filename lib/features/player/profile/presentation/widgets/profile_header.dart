@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:e7m/core/network/api_client.dart';
 import '../../models/player_profile_model.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -13,9 +14,6 @@ class ProfileHeader extends StatelessWidget {
 
   static const Color primaryGreen = Color(0xff7CC000);
   static const Color darkNavy = Color(0xff1E1446);
-
-  // Backend server URL
-  static const String _serverUrl ='http://169.254.98.204:5000';
 
   @override
   Widget build(BuildContext context) {
@@ -124,20 +122,7 @@ class ProfileHeader extends StatelessWidget {
       return null;
     }
 
-    final value = image!.trim();
-
-    // Full URL returned by backend.
-    if (value.startsWith('http://') ||
-        value.startsWith('https://')) {
-      return value;
-    }
-
-    // Relative path returned by backend.
-    if (value.startsWith('/')) {
-      return '$_serverUrl$value';
-    }
-
-    return '$_serverUrl/$value';
+    return ApiClient.resolveMediaUrl(image!.trim());
   }
 
   Widget _buildPlaceholder() {

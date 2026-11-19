@@ -1,7 +1,5 @@
 import 'package:e7m/core/network/api_client.dart';
-
 import '../models/slot_model.dart';
-
 class SlotService {
   final ApiClient _apiClient;
 
@@ -23,13 +21,24 @@ class SlotService {
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid create slot response');
+      throw Exception(
+        'Invalid create slot response',
+      );
+    }
+
+    if (response['success'] != true) {
+      throw Exception(
+        response['message']?.toString() ??
+            'Failed to create slot',
+      );
     }
 
     final slotData = response['slot'];
 
     if (slotData is! Map<String, dynamic>) {
-      throw Exception('Slot data not found in server response');
+      throw Exception(
+        'Slot data not found in server response',
+      );
     }
 
     return SlotModel.fromJson(slotData);
@@ -47,19 +56,35 @@ class SlotService {
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid stadium slots response');
+      throw Exception(
+        'Invalid stadium slots response',
+      );
     }
 
-    final slots = response['slots'];
-
-    if (slots is! List) {
-      return [];
+    if (response['success'] != true) {
+      throw Exception(
+        response['message']?.toString() ??
+            'Failed to load stadium slots',
+      );
     }
 
-    return slots
-        .whereType<Map<String, dynamic>>()
-        .map(SlotModel.fromJson)
-        .toList();
+    final slotsData = response['slots'];
+
+    if (slotsData is! List) {
+      throw Exception(
+        'Server did not return a valid slots list',
+      );
+    }
+
+    return slotsData.map((item) {
+      if (item is! Map<String, dynamic>) {
+        throw Exception(
+          'Invalid slot in server response',
+        );
+      }
+
+      return SlotModel.fromJson(item);
+    }).toList();
   }
 
   // ============================================================
@@ -77,13 +102,24 @@ class SlotService {
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid update slot response');
+      throw Exception(
+        'Invalid update slot response',
+      );
+    }
+
+    if (response['success'] != true) {
+      throw Exception(
+        response['message']?.toString() ??
+            'Failed to update slot',
+      );
     }
 
     final slotData = response['slot'];
 
     if (slotData is! Map<String, dynamic>) {
-      throw Exception('Updated slot data not found');
+      throw Exception(
+        'Updated slot data not found',
+      );
     }
 
     return SlotModel.fromJson(slotData);
@@ -102,7 +138,9 @@ class SlotService {
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid delete slot response');
+      throw Exception(
+        'Invalid delete slot response',
+      );
     }
 
     if (response['success'] != true) {
@@ -130,13 +168,24 @@ class SlotService {
     );
 
     if (response is! Map<String, dynamic>) {
-      throw Exception('Invalid slot status response');
+      throw Exception(
+        'Invalid slot status response',
+      );
+    }
+
+    if (response['success'] != true) {
+      throw Exception(
+        response['message']?.toString() ??
+            'Failed to update slot status',
+      );
     }
 
     final slotData = response['slot'];
 
     if (slotData is! Map<String, dynamic>) {
-      throw Exception('Updated slot data not found');
+      throw Exception(
+        'Updated slot data not found',
+      );
     }
 
     return SlotModel.fromJson(slotData);

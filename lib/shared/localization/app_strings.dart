@@ -2073,10 +2073,13 @@ class AppStrings {
       "payment_submitted": "Payment submitted successfully",
       "payment_account_unavailable": "Payment account is currently unavailable",
       "account_copied": "Account number copied",
+      'phone_verification_coming_soon': 'COMING SOON',
+
     },
     'ar': {
       // Owner dashboard
       'competition_payments': 'مدفوعات البطولات',
+      'phone_verification_coming_soon': 'قريبًا',
       'unable_to_load_dashboard': 'تعذّر تحميل لوحة التحكم',
       'payments': 'المدفوعات',
       'successful': 'ناجحة',
