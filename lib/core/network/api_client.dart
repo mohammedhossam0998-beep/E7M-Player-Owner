@@ -46,9 +46,9 @@ class ApiClient {
   static const String _envBaseUrl =
   String.fromEnvironment('API_BASE_URL');
 
-  static const String _prodBaseUrl = 'http://192.168.1.4:5000';
+  static const String _prodBaseUrl = 'https://e7gzly.elmoparmg.com/
 
-  static const String _devBaseUrl = 'http://192.168.1.4:5000';
+  static const String _devBaseUrl = https://e7gzly.elmoparmg.com/
   static const String baseUrl = _envBaseUrl != ''
       ? _envBaseUrl
       : (kReleaseMode ? _prodBaseUrl : _devBaseUrl);

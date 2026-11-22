@@ -5,7 +5,7 @@
 
 class ImageUrlHelper {
   // غيّر الـ base URL هنا لو الـ IP اتغير، وهيتغير في كل الشاشات مرة واحدة
-  static const String baseUrl = 'http://192.168.1.4:5000';
+  static const String baseUrl = https://e7gzly.elmoparmg.com/
 
   /// يبني رابط صورة كامل وصحيح من أي path راجع من السيرفر،
   /// سواء كان فيه سلاش زيادة أو ناقص أو كان رابط كامل من الأساس.

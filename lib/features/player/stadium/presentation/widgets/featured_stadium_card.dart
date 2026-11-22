@@ -211,7 +211,7 @@ class FeaturedStadiumCard extends StatelessWidget {
       return value;
     }
 
-    return 'http://192.168.1.4:5000$value';
+    return https://e7gzly.elmoparmg.com/$value';
   }
 
   bool get _hasPitchType =>
